@@ -1,0 +1,23 @@
+Subject: [Low balance] OpenAI at 8.20 USD (threshold 20.00 USD)
+
+OpenAI has reached or dropped below its low-balance threshold.
+
+Provider: OpenAI
+Current remaining balance: 8.20 USD
+Threshold: 20.00 USD
+Recovery boundary: 20.00 USD
+Unit / currency: USD
+Data source: Estimated from usage (conservative)
+Balance observed: 2026-10-13 11:56 IST (2026-10-13 06:26 UTC)
+Data age: 4 min
+Last successful sync: 2026-10-13 11:56 IST (2026-10-13 06:26 UTC)
+Last payment: none recorded
+
+Recent usage (last 7 days):
+  - No usage recorded: in the last 7 days
+
+Recommended action: Add credit in the OpenAI platform billing settings, then record the new balance in the dashboard (OpenAI has no balance API).
+Provider console: https://platform.openai.com
+Dashboard: https://monitor.example.com
+
+-- API Cost Monitor. Automated message; do not reply.

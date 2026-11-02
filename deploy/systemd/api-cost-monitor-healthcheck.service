@@ -1,0 +1,18 @@
+# Periodic health check: readiness (database, migrations, disk, backups, scheduler) and
+# free disk space. A failure is logged at error priority and leaves this unit "failed",
+# visible in `systemctl --failed` and the journal namespace.
+[Unit]
+Description=API Cost Monitor health check
+After=api-cost-monitor.service
+
+[Service]
+Type=oneshot
+User=apimon
+Group=apimon
+ExecStart=/opt/api-cost-monitor/current/venv/bin/python /opt/api-cost-monitor/current/deploy/smoke_test.py \
+    --base-url http://127.0.0.1:8100 --ready-only --disk-path /var/lib/api-cost-monitor --min-free-mb 1024
+LogNamespace=api-cost-monitor
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

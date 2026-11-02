@@ -1,0 +1,23 @@
+Subject: [Low balance] ElevenLabs at 4,200 credits (threshold 5,000 credits)
+
+ElevenLabs has reached or dropped below its low-balance threshold.
+
+Provider: ElevenLabs
+Current remaining balance: 4,200 credits
+Threshold: 5,000 credits
+Recovery boundary: 6,000 credits
+Unit / currency: CREDITS (not money)
+Data source: Verified by the provider API
+Balance observed: 2026-10-13 11:56 IST (2026-10-13 06:26 UTC)
+Data age: 4 min
+Last successful sync: 2026-10-13 11:56 IST (2026-10-13 06:26 UTC)
+Last payment: none recorded
+
+Recent usage (last 7 days):
+  - Credits used: 18,350 credits
+
+Recommended action: Upgrade the plan or enable usage-based billing in your ElevenLabs subscription settings before the credit quota runs out.
+Provider console: https://elevenlabs.io
+Dashboard: https://monitor.example.com
+
+-- API Cost Monitor. Automated message; do not reply.

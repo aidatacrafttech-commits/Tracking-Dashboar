@@ -1,0 +1,24 @@
+Subject: [Low balance] Deepgram at 18.40 USD (threshold 25.00 USD)
+
+Deepgram has reached or dropped below its low-balance threshold.
+
+Provider: Deepgram
+Current remaining balance: 18.40 USD
+Threshold: 25.00 USD
+Recovery boundary: 30.00 USD
+Unit / currency: USD
+Data source: Verified by the provider API
+Balance observed: 2026-10-13 11:56 IST (2026-10-13 06:26 UTC)
+Data age: 4 min
+Last successful sync: 2026-10-13 11:56 IST (2026-10-13 06:26 UTC)
+Last payment: 200.50 USD on 2026-09-01 (provider verified)
+
+Recent usage (last 7 days):
+  - Audio hours: 41.2 hours
+  - Cost: 18.75 USD
+
+Recommended action: Top up the Deepgram project balance in the Deepgram console.
+Provider console: https://console.deepgram.com
+Dashboard: https://monitor.example.com
+
+-- API Cost Monitor. Automated message; do not reply.

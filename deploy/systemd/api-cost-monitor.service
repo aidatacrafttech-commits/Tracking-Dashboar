@@ -1,0 +1,84 @@
+# API Cost Monitor — the monitoring dashboard backend (also serves the built UI).
+# Separate from the main application: its own user, port, data, config and logs.
+#
+# Install: sudo install -m 0644 api-cost-monitor.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now api-cost-monitor
+[Unit]
+Description=API Cost Monitor (AI credit and AWS cost dashboard)
+Documentation=file:///opt/api-cost-monitor/current/docs/DEPLOYMENT.md
+After=network-online.target
+Wants=network-online.target
+# Give up after 5 crashes in 5 minutes instead of restarting forever.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=apimon
+Group=apimon
+WorkingDirectory=/opt/api-cost-monitor/current/backend
+
+# Layout-dependent settings live here so deploy/restore scripts and the service agree.
+Environment=APP_ENV=production
+Environment=DATABASE_URL=sqlite:////var/lib/api-cost-monitor/monitor.db
+Environment=BACKUP_DIR=/var/lib/api-cost-monitor/backups
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+# Secrets and per-site settings. Read by systemd as root before dropping privileges,
+# so the file can stay root:root 0600 and is never readable by the service account.
+EnvironmentFile=/etc/api-cost-monitor/monitor.env
+
+# One worker = one background scheduler (polling, alert cycle, backups). Never raise
+# --workers: each worker would start its own scheduler. Bound to localhost only; nginx
+# (or an SSH tunnel) is the only way in. --proxy-headers trusts X-Forwarded-* from the
+# local nginx only, so rate limits see the real client address.
+ExecStart=/opt/api-cost-monitor/current/venv/bin/python -m uvicorn app.main:create_app --factory \
+    --host 127.0.0.1 --port 8100 --workers 1 \
+    --proxy-headers --forwarded-allow-ips 127.0.0.1 \
+    --timeout-graceful-shutdown 15 --no-server-header --no-access-log
+
+# Graceful shutdown: SIGTERM -> close live streams, cancel polls (recorded as interrupted),
+# release job locks, close the database. Hard stop only after 30 s.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+
+# Persistent state: /var/lib/api-cost-monitor (database + backups), created 0700 apimon.
+StateDirectory=api-cost-monitor
+StateDirectoryMode=0700
+UMask=0077
+
+# Logs: JSON lines to stdout -> a dedicated, size-capped journal namespace
+# (see journald@api-cost-monitor.conf). Read with:
+#   journalctl --namespace=api-cost-monitor -u api-cost-monitor
+LogNamespace=api-cost-monitor
+
+# Sandboxing. The service can write only to its StateDirectory.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RemoveIPC=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+MemoryMax=768M
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+Subject: [Recovered] Deepgram balance back above threshold: 150.00 USD
+
+Deepgram has recovered: the balance is above the recovery boundary of 30.00 USD.
+
+Provider: Deepgram
+Current remaining balance: 150.00 USD
+Threshold: 25.00 USD
+Recovery boundary: 30.00 USD
+Unit / currency: USD
+Data source: Verified by the provider API
+Balance observed: 2026-10-13 11:56 IST (2026-10-13 06:26 UTC)
+Data age: 4 min
+Last successful sync: 2026-10-13 11:56 IST (2026-10-13 06:26 UTC)
+Last payment: 200.50 USD on 2026-09-01 (provider verified)
+
+Recent usage (last 7 days):
+  - Audio hours: 41.2 hours
+  - Cost: 18.75 USD
+
+Recommended action: No action needed. Keep monitoring.
+Provider console: https://console.deepgram.com
+Dashboard: https://monitor.example.com
+
+-- API Cost Monitor. Automated message; do not reply.
