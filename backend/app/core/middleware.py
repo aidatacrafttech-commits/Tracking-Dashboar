@@ -44,6 +44,8 @@ def ui_csp(asset_origin: str | None = None) -> str:
         f"connect-src 'self' {asset_origin}; font-src 'self'; object-src 'none'; "
         "base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
     )
+
+
 # Swagger UI loads its own assets; leave CSP off for the docs pages only.
 _DOCS_PATHS = ("/docs", "/redoc", "/openapi.json")
 

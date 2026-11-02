@@ -33,6 +33,16 @@ EXPECTED_TABLES = {
     "voucher_users",
     "voucher_usage_events",
     "voucher_targets",
+    "course_taxonomy_terms",
+    "course_assets",
+    "courses",
+    "course_playlists",
+    "course_chapters",
+    "course_lectures",
+    "course_lecture_variants",
+    "course_lecture_resources",
+    "course_enrollments",
+    "course_enrollment_events",
     "alembic_version",
 }
 

@@ -47,5 +47,7 @@ def access_expiry(start: datetime, value: int, unit: ValidityUnit, timezone: str
 
 
 def validity_label(value: int, unit: ValidityUnit) -> str:
-    name = {ValidityUnit.DAYS: "day", ValidityUnit.MONTHS: "month", ValidityUnit.YEARS: "year"}[unit]
+    name = {ValidityUnit.DAYS: "day", ValidityUnit.MONTHS: "month", ValidityUnit.YEARS: "year"}[
+        unit
+    ]
     return f"{value} {name}{'' if value == 1 else 's'}"

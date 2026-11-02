@@ -41,7 +41,9 @@ class CourseTaxonomyTerm(TimestampMixin, Base):
     __table_args__ = (sa.UniqueConstraint("kind", "name_key", name="uq_course_taxonomy_kind_name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    kind: Mapped[TaxonomyKind] = mapped_column(str_enum(TaxonomyKind, "taxonomy_kind"), nullable=False)
+    kind: Mapped[TaxonomyKind] = mapped_column(
+        str_enum(TaxonomyKind, "taxonomy_kind"), nullable=False
+    )
     name: Mapped[str] = mapped_column(sa.String(80), nullable=False)
     name_key: Mapped[str] = mapped_column(sa.String(80), nullable=False)  # case-insensitive
     sort_order: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=0)
@@ -55,7 +57,9 @@ class CourseAsset(Base):
     __table_args__ = (sa.CheckConstraint("size_bytes > 0", name="size_positive"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    kind: Mapped[CourseAssetKind] = mapped_column(str_enum(CourseAssetKind, "asset_kind"), nullable=False)
+    kind: Mapped[CourseAssetKind] = mapped_column(
+        str_enum(CourseAssetKind, "asset_kind"), nullable=False
+    )
     status: Mapped[CourseAssetStatus] = mapped_column(
         str_enum(CourseAssetStatus, "asset_status"), nullable=False
     )
@@ -80,7 +84,8 @@ class Course(TimestampMixin, Base):
             "original_price IS NULL OR original_price >= 0", name="original_price_non_negative"
         ),
         sa.CheckConstraint(
-            "discounted_price IS NULL OR discounted_price >= 0", name="discounted_price_non_negative"
+            "discounted_price IS NULL OR discounted_price >= 0",
+            name="discounted_price_non_negative",
         ),
         sa.Index("ix_courses_status_launch", "status", "launch_at"),
     )
@@ -104,7 +109,9 @@ class Course(TimestampMixin, Base):
     price: Mapped[Decimal | None] = mapped_column(ScaledDecimal())  # list price
     original_price: Mapped[Decimal | None] = mapped_column(ScaledDecimal())  # struck-out MRP
     discounted_price: Mapped[Decimal | None] = mapped_column(ScaledDecimal())  # sale price
-    status: Mapped[CourseStatus] = mapped_column(str_enum(CourseStatus, "course_status"), nullable=False)
+    status: Mapped[CourseStatus] = mapped_column(
+        str_enum(CourseStatus, "course_status"), nullable=False
+    )
     # When the course opens for purchase / enrollment. Never a student's validity start.
     launch_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     # Access each student gets, counted from their own successful purchase.
@@ -114,12 +121,18 @@ class Course(TimestampMixin, Base):
     )
     published_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     archived_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
-    created_by: Mapped[CourseActor] = mapped_column(str_enum(CourseActor, "created_by"), nullable=False)
-    updated_by: Mapped[CourseActor] = mapped_column(str_enum(CourseActor, "updated_by"), nullable=False)
+    created_by: Mapped[CourseActor] = mapped_column(
+        str_enum(CourseActor, "created_by"), nullable=False
+    )
+    updated_by: Mapped[CourseActor] = mapped_column(
+        str_enum(CourseActor, "updated_by"), nullable=False
+    )
     version: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=1)
 
     playlists: Mapped[list[Playlist]] = relationship(
-        back_populates="course", cascade="all, delete-orphan", order_by="Playlist.position",
+        back_populates="course",
+        cascade="all, delete-orphan",
+        order_by="Playlist.position",
         passive_deletes=True,
     )
 
@@ -131,7 +144,9 @@ class Playlist(TimestampMixin, Base):
     __table_args__ = (sa.Index("ix_course_playlists_course_position", "course_id", "position"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    course_id: Mapped[int] = mapped_column(sa.ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    course_id: Mapped[int] = mapped_column(
+        sa.ForeignKey("courses.id", ondelete="CASCADE"), nullable=False
+    )
     title: Mapped[str] = mapped_column(sa.String(160), nullable=False)
     description: Mapped[str | None] = mapped_column(sa.Text)
     thumbnail_asset_id: Mapped[int | None] = mapped_column(_asset_fk())
@@ -139,7 +154,9 @@ class Playlist(TimestampMixin, Base):
 
     course: Mapped[Course] = relationship(back_populates="playlists")
     chapters: Mapped[list[Chapter]] = relationship(
-        back_populates="playlist", cascade="all, delete-orphan", order_by="Chapter.position",
+        back_populates="playlist",
+        cascade="all, delete-orphan",
+        order_by="Chapter.position",
         passive_deletes=True,
     )
 
@@ -159,7 +176,9 @@ class Chapter(TimestampMixin, Base):
 
     playlist: Mapped[Playlist] = relationship(back_populates="chapters")
     lectures: Mapped[list[Lecture]] = relationship(
-        back_populates="chapter", cascade="all, delete-orphan", order_by="Lecture.position",
+        back_populates="chapter",
+        cascade="all, delete-orphan",
+        order_by="Lecture.position",
         passive_deletes=True,
     )
 
@@ -167,7 +186,9 @@ class Chapter(TimestampMixin, Base):
 class Lecture(TimestampMixin, Base):
     __tablename__ = "course_lectures"
     __table_args__ = (
-        sa.CheckConstraint("duration_seconds IS NULL OR duration_seconds >= 0", name="duration_non_negative"),
+        sa.CheckConstraint(
+            "duration_seconds IS NULL OR duration_seconds >= 0", name="duration_non_negative"
+        ),
         sa.Index("ix_course_lectures_chapter_position", "chapter_id", "position"),
     )
 
@@ -180,18 +201,24 @@ class Lecture(TimestampMixin, Base):
     thumbnail_asset_id: Mapped[int | None] = mapped_column(_asset_fk())
     duration_seconds: Mapped[int | None] = mapped_column(sa.Integer)
     is_free_preview: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, default=False)
-    status: Mapped[LectureStatus] = mapped_column(str_enum(LectureStatus, "lecture_status"), nullable=False)
+    status: Mapped[LectureStatus] = mapped_column(
+        str_enum(LectureStatus, "lecture_status"), nullable=False
+    )
     # Language shown first when a student opens the lecture (must have a variant).
     default_language: Mapped[str | None] = mapped_column(sa.String(16))
     position: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=0)
 
     chapter: Mapped[Chapter] = relationship(back_populates="lectures")
     variants: Mapped[list[LectureVariant]] = relationship(
-        back_populates="lecture", cascade="all, delete-orphan", order_by="LectureVariant.id",
+        back_populates="lecture",
+        cascade="all, delete-orphan",
+        order_by="LectureVariant.id",
         passive_deletes=True,
     )
     resources: Mapped[list[LectureResource]] = relationship(
-        back_populates="lecture", cascade="all, delete-orphan", order_by="LectureResource.position",
+        back_populates="lecture",
+        cascade="all, delete-orphan",
+        order_by="LectureResource.position",
         passive_deletes=True,
     )
 
@@ -202,9 +229,7 @@ class LectureVariant(TimestampMixin, Base):
     __tablename__ = "course_lecture_variants"
     __table_args__ = (
         sa.UniqueConstraint("lecture_id", "language", name="uq_course_lecture_variants_language"),
-        sa.CheckConstraint(
-            "video_asset_id IS NULL OR video_url IS NULL", name="one_video_source"
-        ),
+        sa.CheckConstraint("video_asset_id IS NULL OR video_url IS NULL", name="one_video_source"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -249,7 +274,8 @@ class CourseEnrollment(TimestampMixin, Base):
         sa.CheckConstraint("validity_value > 0", name="validity_positive"),
         sa.CheckConstraint("amount_paid >= 0", name="amount_non_negative"),
         sa.CheckConstraint(
-            "access_expires_at IS NULL OR access_start_at IS NULL OR access_expires_at > access_start_at",
+            "access_expires_at IS NULL OR access_start_at IS NULL"
+            " OR access_expires_at > access_start_at",
             name="expiry_after_start",
         ),
         sa.Index("ix_course_enrollments_student", "student_id", "course_id"),
@@ -259,12 +285,18 @@ class CourseEnrollment(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     # RESTRICT: a course with enrollments can be archived, never deleted.
-    course_id: Mapped[int] = mapped_column(sa.ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False)
+    course_id: Mapped[int] = mapped_column(
+        sa.ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False
+    )
     course_title: Mapped[str] = mapped_column(sa.String(160), nullable=False)  # at purchase
     student_id: Mapped[str] = mapped_column(sa.String(128), nullable=False)  # app's user id
     student_name: Mapped[str | None] = mapped_column(sa.String(120))
-    source: Mapped[EnrollmentSource] = mapped_column(str_enum(EnrollmentSource, "enrollment_source"), nullable=False)
-    status: Mapped[EnrollmentStatus] = mapped_column(str_enum(EnrollmentStatus, "enrollment_status"), nullable=False)
+    source: Mapped[EnrollmentSource] = mapped_column(
+        str_enum(EnrollmentSource, "enrollment_source"), nullable=False
+    )
+    status: Mapped[EnrollmentStatus] = mapped_column(
+        str_enum(EnrollmentStatus, "enrollment_status"), nullable=False
+    )
     # Idempotency: one enrollment per payment / per order, whatever the number of callbacks.
     payment_provider: Mapped[str | None] = mapped_column(sa.String(40))
     payment_id: Mapped[str | None] = mapped_column(sa.String(128), unique=True)
@@ -276,7 +308,9 @@ class CourseEnrollment(TimestampMixin, Base):
     purchased_at: Mapped[datetime | None] = mapped_column(UTCDateTime())  # payment confirmed
     access_start_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     validity_value: Mapped[int] = mapped_column(sa.Integer, nullable=False)  # snapshot
-    validity_unit: Mapped[ValidityUnit] = mapped_column(str_enum(ValidityUnit, "validity_unit"), nullable=False)
+    validity_unit: Mapped[ValidityUnit] = mapped_column(
+        str_enum(ValidityUnit, "validity_unit"), nullable=False
+    )
     access_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     status_reason: Mapped[str | None] = mapped_column(sa.String(255))
     version: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=1)

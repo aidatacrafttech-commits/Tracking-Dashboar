@@ -200,7 +200,9 @@ class Settings(BaseSettings):
     # S3 bucket for course files (thumbnails, videos, audio, subtitles, PDFs). Separate
     # from the read-only AWS monitoring credentials: these keys need s3:PutObject and
     # s3:GetObject on this bucket only. Unset bucket = uploads off (video URLs still work).
-    course_assets_bucket: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
+    course_assets_bucket: str | None = Field(
+        default=None, pattern=r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+    )
     course_assets_region: str = Field(default="ap-south-1", pattern=r"^[a-z]{2}-[a-z]+-\d$")
     course_assets_prefix: str = Field(default="courses/", pattern=r"^[A-Za-z0-9!_.*'()/-]{0,200}$")
     course_assets_access_key_id: SecretStr | None = None
@@ -397,7 +399,8 @@ class Settings(BaseSettings):
             self.course_assets_secret_access_key is None
         ):
             raise ValueError(
-                "set both COURSE_ASSETS_ACCESS_KEY_ID and COURSE_ASSETS_SECRET_ACCESS_KEY, or neither"
+                "set both COURSE_ASSETS_ACCESS_KEY_ID and COURSE_ASSETS_SECRET_ACCESS_KEY,"
+                " or neither"
             )
         if self.app_env == "production":
             # API schema is not needed in production and widens the attack surface.

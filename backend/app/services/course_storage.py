@@ -73,10 +73,9 @@ class S3CourseStorage:
         self.ttl = settings.course_assets_url_ttl_seconds
         credentials: dict[str, str] = {}
         if settings.course_assets_access_key_id and settings.course_assets_secret_access_key:
-            credentials = {
-                "aws_access_key_id": settings.course_assets_access_key_id.get_secret_value(),
-                "aws_secret_access_key": settings.course_assets_secret_access_key.get_secret_value(),
-            }
+            key_id = settings.course_assets_access_key_id.get_secret_value()
+            secret = settings.course_assets_secret_access_key.get_secret_value()
+            credentials = {"aws_access_key_id": key_id, "aws_secret_access_key": secret}
         self.client = boto3.client(
             "s3",
             region_name=settings.course_assets_region,

@@ -136,7 +136,8 @@ class CourseFields(InputModel):
             raise ValueError("title must be at least 2 characters")
         if self.validity_value > MAX_VALIDITY[self.validity_unit]:
             raise ValueError(
-                f"validity can be at most {MAX_VALIDITY[self.validity_unit]} {self.validity_unit.value}"
+                f"validity can be at most {MAX_VALIDITY[self.validity_unit]}"
+                f" {self.validity_unit.value}"
             )
         if self.is_free:
             if any(p for p in (self.price, self.original_price, self.discounted_price)):
