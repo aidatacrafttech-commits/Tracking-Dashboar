@@ -85,7 +85,9 @@ def error(resp) -> str:  # type: ignore[no-untyped-def]
 
 
 def term(api: TestClient, kind: str, name: str) -> int:
-    return ok(api.post(f"{C}/taxonomy", json={"kind": kind, "name": name}, headers=OWNER), 201)["id"]
+    return ok(api.post(f"{C}/taxonomy", json={"kind": kind, "name": name}, headers=OWNER), 201)[
+        "id"
+    ]
 
 
 def course_body(**over: Any) -> dict[str, Any]:
@@ -108,20 +110,55 @@ def make_course(api: TestClient, *, publish: bool = True, **over: Any) -> dict[s
     over.setdefault("class_id", term(api, "class", f"Class {next(_ids)}"))
     over.setdefault("subject_id", term(api, "subject", f"Subject {next(_ids)}"))
     course = ok(api.post(C, json=course_body(**over), headers=OWNER), 201)
-    playlist = ok(api.post(f"{C}/{course['id']}/playlists", json={"title": "Full course"}, headers=OWNER), 201)
-    chapter = ok(api.post(f"{C}/playlists/{playlist['id']}/chapters", json={"title": "Chapter 1"}, headers=OWNER), 201)
-    lecture = ok(api.post(f"{C}/chapters/{chapter['id']}/lectures",
-                          json={"title": "Journal entries", "status": "published", "duration_seconds": 1800},
-                          headers=OWNER), 201)
-    ok(api.post(f"{C}/lectures/{lecture['id']}/variants",
-                json={"language": "en", "video_url": "https://cdn.example.com/journal-en.mp4"}, headers=OWNER), 201)
-    ok(api.post(f"{C}/lectures/{lecture['id']}/variants",
-                json={"language": "hi", "video_url": "https://cdn.example.com/journal-hi.mp4"}, headers=OWNER), 201)
-    preview = ok(api.post(f"{C}/chapters/{chapter['id']}/lectures",
-                          json={"title": "Introduction", "status": "published", "is_free_preview": True},
-                          headers=OWNER), 201)
-    ok(api.post(f"{C}/lectures/{preview['id']}/variants",
-                json={"language": "en", "video_url": "https://cdn.example.com/intro.mp4"}, headers=OWNER), 201)
+    playlist = ok(
+        api.post(f"{C}/{course['id']}/playlists", json={"title": "Full course"}, headers=OWNER), 201
+    )
+    chapter = ok(
+        api.post(
+            f"{C}/playlists/{playlist['id']}/chapters", json={"title": "Chapter 1"}, headers=OWNER
+        ),
+        201,
+    )
+    lecture = ok(
+        api.post(
+            f"{C}/chapters/{chapter['id']}/lectures",
+            json={"title": "Journal entries", "status": "published", "duration_seconds": 1800},
+            headers=OWNER,
+        ),
+        201,
+    )
+    ok(
+        api.post(
+            f"{C}/lectures/{lecture['id']}/variants",
+            json={"language": "en", "video_url": "https://cdn.example.com/journal-en.mp4"},
+            headers=OWNER,
+        ),
+        201,
+    )
+    ok(
+        api.post(
+            f"{C}/lectures/{lecture['id']}/variants",
+            json={"language": "hi", "video_url": "https://cdn.example.com/journal-hi.mp4"},
+            headers=OWNER,
+        ),
+        201,
+    )
+    preview = ok(
+        api.post(
+            f"{C}/chapters/{chapter['id']}/lectures",
+            json={"title": "Introduction", "status": "published", "is_free_preview": True},
+            headers=OWNER,
+        ),
+        201,
+    )
+    ok(
+        api.post(
+            f"{C}/lectures/{preview['id']}/variants",
+            json={"language": "en", "video_url": "https://cdn.example.com/intro.mp4"},
+            headers=OWNER,
+        ),
+        201,
+    )
     if publish:
         ok(api.post(f"{C}/{course['id']}/publish", headers=OWNER))
     detail = ok(api.get(f"{C}/{course['id']}", headers=OWNER))
@@ -131,13 +168,25 @@ def make_course(api: TestClient, *, publish: bool = True, **over: Any) -> dict[s
 
 
 def pay(api: TestClient, course_id: int, student: str, **over: Any):  # type: ignore[no-untyped-def]
-    body = {"course_id": course_id, "student_id": student, "student_name": "Asha Verma",
-            "payment_id": f"pay_{next(_ids)}", "payment_provider": "razorpay", "amount_paid": "799",
-            **over}
+    body = {
+        "course_id": course_id,
+        "student_id": student,
+        "student_name": "Asha Verma",
+        "payment_id": f"pay_{next(_ids)}",
+        "payment_provider": "razorpay",
+        "amount_paid": "799",
+        **over,
+    }
     return api.post(f"{I}/payments/confirm", json=body, headers=APP)
 
 
-def play(api: TestClient, course_id: int, lecture_id: int, student: str | None, language: str | None = None):  # type: ignore[no-untyped-def]
+def play(
+    api: TestClient,
+    course_id: int,
+    lecture_id: int,
+    student: str | None,
+    language: str | None = None,
+):  # type: ignore[no-untyped-def]
     params = {k: v for k, v in (("student_id", student), ("language", language)) if v}
     return api.get(f"{I}/{course_id}/lectures/{lecture_id}/play", params=params, headers=APP)
 
@@ -148,18 +197,37 @@ def play(api: TestClient, course_id: int, lecture_id: int, student: str | None, 
 def test_create_and_edit_course_with_pricing_validation(api: TestClient, capp: FastAPI) -> None:
     class_id, subject_id = term(api, "class", "Class 12"), term(api, "subject", "Accountancy")
     stream_id = term(api, "stream", "Commerce")
-    c = ok(api.post(C, json=course_body(class_id=class_id, stream_id=stream_id, subject_id=subject_id),
-                    headers=OWNER), 201)
+    c = ok(
+        api.post(
+            C,
+            json=course_body(class_id=class_id, stream_id=stream_id, subject_id=subject_id),
+            headers=OWNER,
+        ),
+        201,
+    )
     assert (c["status"], c["display_status"], c["version"]) == ("draft", "draft", 1)
-    assert (c["class_name"], c["stream_name"], c["subject_name"]) == ("Class 12", "Commerce", "Accountancy")
+    assert (c["class_name"], c["stream_name"], c["subject_name"]) == (
+        "Class 12",
+        "Commerce",
+        "Accountancy",
+    )
     assert (c["price"], c["discounted_price"], c["effective_price"]) == ("999", "799", "799")
     assert c["validity_label"] == "6 months" and c["can_delete"] is True
     assert "end" not in " ".join(c.keys())  # there is no course end date
 
-    edit = {**course_body(class_id=class_id, subject_id=subject_id), "title": "Accountancy 2027",
-            "validity_value": 1, "validity_unit": "years", "version": c["version"]}
+    edit = {
+        **course_body(class_id=class_id, subject_id=subject_id),
+        "title": "Accountancy 2027",
+        "validity_value": 1,
+        "validity_unit": "years",
+        "version": c["version"],
+    }
     updated = ok(api.put(f"{C}/{c['id']}", json=edit, headers=OWNER))
-    assert (updated["title"], updated["validity_label"], updated["version"]) == ("Accountancy 2027", "1 year", 2)
+    assert (updated["title"], updated["validity_label"], updated["version"]) == (
+        "Accountancy 2027",
+        "1 year",
+        2,
+    )
     stale = api.put(f"{C}/{c['id']}", json=edit, headers=OWNER)
     assert stale.status_code == 409 and error(stale) == "concurrent_modification"
 
@@ -176,10 +244,18 @@ def test_create_and_edit_course_with_pricing_validation(api: TestClient, capp: F
         {"launch_at": "2026-11-01T09:00:00"},  # no timezone
         {"class_id": subject_id},  # a subject used as a class
     ):
-        resp = api.post(C, json={**course_body(class_id=class_id, subject_id=subject_id), **bad}, headers=OWNER)
+        resp = api.post(
+            C, json={**course_body(class_id=class_id, subject_id=subject_id), **bad}, headers=OWNER
+        )
         assert resp.status_code == 422, (bad, resp.text)
-    free = ok(api.post(C, json=course_body(is_free=True, price=None, discounted_price=None,
-                                            original_price=None), headers=OWNER), 201)
+    free = ok(
+        api.post(
+            C,
+            json=course_body(is_free=True, price=None, discounted_price=None, original_price=None),
+            headers=OWNER,
+        ),
+        201,
+    )
     assert (free["is_free"], free["effective_price"], free["price"]) == (True, "0", None)
     with capp.state.session_factory() as s:
         assert "course.create" in s.scalars(select(AuditLog.action)).all()
@@ -189,7 +265,12 @@ def test_taxonomy_is_managed_and_protected(api: TestClient) -> None:
     class_id = term(api, "class", "Class 11")
     dup = api.post(f"{C}/taxonomy", json={"kind": "class", "name": "class 11"}, headers=OWNER)
     assert dup.status_code == 409 and error(dup) == "duplicate_taxonomy"
-    assert api.post(f"{C}/taxonomy", json={"kind": "subject", "name": "Class 11"}, headers=OWNER).status_code == 201
+    assert (
+        api.post(
+            f"{C}/taxonomy", json={"kind": "subject", "name": "Class 11"}, headers=OWNER
+        ).status_code
+        == 201
+    )
     make_course(api, class_id=class_id, publish=False)
     used = api.delete(f"{C}/taxonomy/{class_id}", headers=OWNER)
     assert used.status_code == 409 and error(used) == "taxonomy_in_use"
@@ -207,12 +288,24 @@ def test_launch_date_controls_purchase_not_validity(api: TestClient) -> None:
     assert upcoming["display_status"] == "scheduled"
     early = pay(api, upcoming["id"], "early-bird")
     assert early.status_code == 409 and error(early) == "course_not_launched"
-    order = api.post(f"{I}/orders", json={"course_id": upcoming["id"], "student_id": "s1", "order_id": "ord_up",
-                                          "payment_provider": "razorpay"}, headers=APP)
+    order = api.post(
+        f"{I}/orders",
+        json={
+            "course_id": upcoming["id"],
+            "student_id": "s1",
+            "order_id": "ord_up",
+            "payment_provider": "razorpay",
+        },
+        headers=APP,
+    )
     assert order.status_code == 409 and error(order) == "course_not_launched"
     catalog = ok(api.get(f"{I}/catalog", headers=APP))["items"]
     item = next(i for i in catalog if i["id"] == upcoming["id"])
-    assert item["availability"] == {"purchasable": False, "reason": "not_launched", "launch_at": item["availability"]["launch_at"]}
+    assert item["availability"] == {
+        "purchasable": False,
+        "reason": "not_launched",
+        "launch_at": item["availability"]["launch_at"],
+    }
 
     launched = make_course(api)
     assert launched["display_status"] == "published"
@@ -220,7 +313,9 @@ def test_launch_date_controls_purchase_not_validity(api: TestClient) -> None:
     # Validity counts from this student's purchase, not from the launch date (1 Jan 2026).
     start = datetime.fromisoformat(result["access_start_at"])
     assert abs(start - datetime.now(UTC)) < timedelta(minutes=1)
-    assert datetime.fromisoformat(result["access_expires_at"]) == access_expiry(start, 6, ValidityUnit.MONTHS, IST)
+    assert datetime.fromisoformat(result["access_expires_at"]) == access_expiry(
+        start, 6, ValidityUnit.MONTHS, IST
+    )
 
 
 def test_publish_requires_complete_course(api: TestClient) -> None:
@@ -228,17 +323,35 @@ def test_publish_requires_complete_course(api: TestClient) -> None:
     check = ok(api.get(f"{C}/{bare['id']}/publish-check", headers=VIEWER))
     codes = {p["code"] for p in check["problems"] if p["blocking"]}
     assert check["ready"] is False
-    assert {"missing_description", "missing_class", "missing_subject", "missing_launch_date", "no_playlists"} <= codes
+    assert {
+        "missing_description",
+        "missing_class",
+        "missing_subject",
+        "missing_launch_date",
+        "no_playlists",
+    } <= codes
     refused = api.post(f"{C}/{bare['id']}/publish", headers=OWNER)
     assert refused.status_code == 409 and error(refused) == "publish_requirements"
 
     # A published lecture without any video blocks publishing
     c = make_course(api, publish=False)
-    lonely = ok(api.post(f"{C}/chapters/{c['chapter_id']}/lectures",
-                         json={"title": "No video yet", "status": "published"}, headers=OWNER), 201)
+    lonely = ok(
+        api.post(
+            f"{C}/chapters/{c['chapter_id']}/lectures",
+            json={"title": "No video yet", "status": "published"},
+            headers=OWNER,
+        ),
+        201,
+    )
     blocked = api.post(f"{C}/{c['id']}/publish", headers=OWNER)
     assert blocked.status_code == 409 and "No video yet" in blocked.json()["error"]["message"]
-    ok(api.put(f"{C}/lectures/{lonely['id']}", json={"title": "No video yet", "status": "draft"}, headers=OWNER))
+    ok(
+        api.put(
+            f"{C}/lectures/{lonely['id']}",
+            json={"title": "No video yet", "status": "draft"},
+            headers=OWNER,
+        )
+    )
     published = ok(api.post(f"{C}/{c['id']}/publish", headers=OWNER))
     assert published["status"] == "published" and published["published_at"]
     # A published course must stay complete: its only playable lectures can't be removed
@@ -260,7 +373,12 @@ def test_status_transitions_and_archive_keeps_existing_access(api: TestClient) -
     assert refused.status_code == 409 and error(refused) == "course_archived"
     # The existing student keeps access according to their own validity
     assert ok(play(api, c["id"], c["lecture_id"], "keeper"))["language"] == "en"
-    assert ok(api.get(f"{I}/{c['id']}", params={"student_id": "keeper"}, headers=APP))["availability"]["reason"] == "archived"
+    assert (
+        ok(api.get(f"{I}/{c['id']}", params={"student_id": "keeper"}, headers=APP))["availability"][
+            "reason"
+        ]
+        == "archived"
+    )
     assert c["id"] not in [i["id"] for i in ok(api.get(f"{I}/catalog", headers=APP))["items"]]
     restored = ok(api.post(f"{C}/{c['id']}/unarchive", headers=OWNER))
     assert restored["status"] == "draft"
@@ -274,19 +392,42 @@ def test_status_transitions_and_archive_keeps_existing_access(api: TestClient) -
 def test_content_tree_crud_and_reorder(api: TestClient) -> None:
     c = make_course(api, publish=False)
     p2 = ok(api.post(f"{C}/{c['id']}/playlists", json={"title": "Revision"}, headers=OWNER), 201)
-    ok(api.put(f"{C}/{c['id']}/playlists/order", json={"ids": [p2["id"], c["playlist_id"]]}, headers=OWNER), 204)
+    ok(
+        api.put(
+            f"{C}/{c['id']}/playlists/order",
+            json={"ids": [p2["id"], c["playlist_id"]]},
+            headers=OWNER,
+        ),
+        204,
+    )
     detail = ok(api.get(f"{C}/{c['id']}", headers=OWNER))
     assert [p["title"] for p in detail["playlists"]] == ["Revision", "Full course"]
     bad = api.put(f"{C}/{c['id']}/playlists/order", json={"ids": [p2["id"]]}, headers=OWNER)
     assert bad.status_code == 422 and error(bad) == "invalid_order"
 
     lectures = [l["id"] for l in detail["playlists"][1]["chapters"][0]["lectures"]]  # noqa: E741
-    ok(api.put(f"{C}/chapters/{c['chapter_id']}/lectures/order", json={"ids": lectures[::-1]}, headers=OWNER), 204)
+    ok(
+        api.put(
+            f"{C}/chapters/{c['chapter_id']}/lectures/order",
+            json={"ids": lectures[::-1]},
+            headers=OWNER,
+        ),
+        204,
+    )
     detail = ok(api.get(f"{C}/{c['id']}", headers=OWNER))
     assert [l["id"] for l in detail["playlists"][1]["chapters"][0]["lectures"]] == lectures[::-1]  # noqa: E741
 
-    ch2 = ok(api.post(f"{C}/playlists/{p2['id']}/chapters", json={"title": "Mock tests"}, headers=OWNER), 201)
-    ok(api.put(f"{C}/chapters/{ch2['id']}", json={"title": "Mock tests (2027)", "description": "Timed"}, headers=OWNER))
+    ch2 = ok(
+        api.post(f"{C}/playlists/{p2['id']}/chapters", json={"title": "Mock tests"}, headers=OWNER),
+        201,
+    )
+    ok(
+        api.put(
+            f"{C}/chapters/{ch2['id']}",
+            json={"title": "Mock tests (2027)", "description": "Timed"},
+            headers=OWNER,
+        )
+    )
     ok(api.put(f"{C}/playlists/{p2['id']}", json={"title": "Revision & mocks"}, headers=OWNER))
     ok(api.delete(f"{C}/chapters/{ch2['id']}", headers=OWNER), 204)
     ok(api.delete(f"{C}/playlists/{p2['id']}", headers=OWNER), 204)
@@ -296,22 +437,40 @@ def test_content_tree_crud_and_reorder(api: TestClient) -> None:
     # Preview shows the course as students will see it, drafts included
     preview = ok(api.get(f"{C}/{c['id']}/preview", headers=VIEWER))
     assert preview["playlists"][0]["chapters"][0]["lectures"][0]["languages"]
-    assert ok(api.get(f"{C}/{c['id']}/preview/lectures/{c['lecture_id']}", headers=VIEWER))["video_url"]
+    assert ok(api.get(f"{C}/{c['id']}/preview/lectures/{c['lecture_id']}", headers=VIEWER))[
+        "video_url"
+    ]
 
 
 def test_language_variants(api: TestClient) -> None:
     c = make_course(api)
     lecture = c["lecture_id"]
-    dup = api.post(f"{C}/lectures/{lecture}/variants",
-                   json={"language": "hi", "video_url": "https://cdn.example.com/x.mp4"}, headers=OWNER)
+    dup = api.post(
+        f"{C}/lectures/{lecture}/variants",
+        json={"language": "hi", "video_url": "https://cdn.example.com/x.mp4"},
+        headers=OWNER,
+    )
     assert dup.status_code == 422 and error(dup) == "duplicate_language"
-    for bad in ({"language": "xx", "video_url": "https://a.example/v.mp4"},
-                {"language": "ta"},  # no video
-                {"language": "ta", "video_url": "http://insecure.example/v.mp4"}):
-        assert api.post(f"{C}/lectures/{lecture}/variants", json=bad, headers=OWNER).status_code == 422
-    tamil = ok(api.post(f"{C}/lectures/{lecture}/variants",
-                        json={"language": "ta", "video_url": "https://cdn.example.com/ta.mp4",
-                              "description": "Tamil narration"}, headers=OWNER), 201)
+    for bad in (
+        {"language": "xx", "video_url": "https://a.example/v.mp4"},
+        {"language": "ta"},  # no video
+        {"language": "ta", "video_url": "http://insecure.example/v.mp4"},
+    ):
+        assert (
+            api.post(f"{C}/lectures/{lecture}/variants", json=bad, headers=OWNER).status_code == 422
+        )
+    tamil = ok(
+        api.post(
+            f"{C}/lectures/{lecture}/variants",
+            json={
+                "language": "ta",
+                "video_url": "https://cdn.example.com/ta.mp4",
+                "description": "Tamil narration",
+            },
+            headers=OWNER,
+        ),
+        201,
+    )
     assert tamil["language_name"] == "Tamil"
     ok(pay(api, c["id"], "linguist"))
     assert ok(play(api, c["id"], lecture, "linguist"))["language"] == "en"  # default = first added
@@ -320,11 +479,23 @@ def test_language_variants(api: TestClient) -> None:
     assert {a["code"] for a in hindi["available_languages"]} == {"en", "hi", "ta"}
     missing = play(api, c["id"], lecture, "linguist", "mr")
     assert missing.status_code == 404 and error(missing) == "language_unavailable"
-    assert "Marathi" in missing.json()["error"]["message"] and "Tamil" in missing.json()["error"]["message"]
-    assert {a["name"] for a in missing.json()["error"]["details"]["available_languages"]} == {"English", "Hindi", "Tamil"}
+    assert (
+        "Marathi" in missing.json()["error"]["message"]
+        and "Tamil" in missing.json()["error"]["message"]
+    )
+    assert {a["name"] for a in missing.json()["error"]["details"]["available_languages"]} == {
+        "English",
+        "Hindi",
+        "Tamil",
+    }
     # Removing the default language moves the default to another variant
-    english = next(v for v in ok(api.get(f"{C}/{c['id']}", headers=OWNER))["playlists"][0]["chapters"][0]["lectures"]
-                   if v["id"] == lecture)["variants"][0]
+    english = next(
+        v
+        for v in ok(api.get(f"{C}/{c['id']}", headers=OWNER))["playlists"][0]["chapters"][0][
+            "lectures"
+        ]
+        if v["id"] == lecture
+    )["variants"][0]
     ok(api.delete(f"{C}/variants/{english['id']}", headers=OWNER), 204)
     assert ok(play(api, c["id"], lecture, "linguist"))["language"] == "hi"
 
@@ -332,15 +503,39 @@ def test_language_variants(api: TestClient) -> None:
 def test_file_uploads_are_validated_and_verified(api: TestClient, capp: FastAPI) -> None:
     storage: FakeStorage = capp.state.course_storage
     for bad, code in (
-        ({"kind": "image", "filename": "a.gif", "content_type": "image/gif", "size_bytes": 10}, "invalid_file_type"),
-        ({"kind": "image", "filename": "a.png", "content_type": "image/jpeg", "size_bytes": 10}, "invalid_file_type"),
-        ({"kind": "document", "filename": "n.pdf", "content_type": "application/pdf", "size_bytes": 101 * 1024 * 1024}, "file_too_large"),
+        (
+            {"kind": "image", "filename": "a.gif", "content_type": "image/gif", "size_bytes": 10},
+            "invalid_file_type",
+        ),
+        (
+            {"kind": "image", "filename": "a.png", "content_type": "image/jpeg", "size_bytes": 10},
+            "invalid_file_type",
+        ),
+        (
+            {
+                "kind": "document",
+                "filename": "n.pdf",
+                "content_type": "application/pdf",
+                "size_bytes": 101 * 1024 * 1024,
+            },
+            "file_too_large",
+        ),
     ):
         resp = api.post(f"{C}/assets/uploads", json=bad, headers=OWNER)
         assert resp.status_code == 422 and error(resp) == code, resp.text
-    ticket = ok(api.post(f"{C}/assets/uploads", json={"kind": "video", "filename": "../../etc/Lecture 1.MP4",
-                                                       "content_type": "video/mp4", "size_bytes": 5000},
-                         headers=OWNER), 201)
+    ticket = ok(
+        api.post(
+            f"{C}/assets/uploads",
+            json={
+                "kind": "video",
+                "filename": "../../etc/Lecture 1.MP4",
+                "content_type": "video/mp4",
+                "size_bytes": 5000,
+            },
+            headers=OWNER,
+        ),
+        201,
+    )
     key, content_type, max_bytes = storage.tickets[-1]
     assert key.startswith("courses/video/") and key.endswith(".mp4") and ".." not in key
     assert (content_type, max_bytes) == ("video/mp4", 5000)
@@ -355,18 +550,32 @@ def test_file_uploads_are_validated_and_verified(api: TestClient, capp: FastAPI)
     assert done["status"] == "uploaded" and done["url"].startswith("https://signed.example/")
     # A pending or wrong-kind asset can't be attached
     c = make_course(api)
-    wrong = api.post(f"{C}/lectures/{c['lecture_id']}/resources", json={"title": "Notes", "asset_id": asset_id},
-                     headers=OWNER)
+    wrong = api.post(
+        f"{C}/lectures/{c['lecture_id']}/resources",
+        json={"title": "Notes", "asset_id": asset_id},
+        headers=OWNER,
+    )
     assert wrong.status_code == 422 and error(wrong) == "invalid_asset"
-    ok(api.post(f"{C}/lectures/{c['lecture_id']}/variants", json={"language": "mr", "video_asset_id": asset_id},
-                headers=OWNER), 201)
+    ok(
+        api.post(
+            f"{C}/lectures/{c['lecture_id']}/variants",
+            json={"language": "mr", "video_asset_id": asset_id},
+            headers=OWNER,
+        ),
+        201,
+    )
     ok(pay(api, c["id"], "viewer-1"))
     marathi = ok(play(api, c["id"], c["lecture_id"], "viewer-1", "mr"))
-    assert marathi["video_url"] == f"https://signed.example/{key}" and marathi["url_expires_in"] == 900
+    assert (
+        marathi["video_url"] == f"https://signed.example/{key}" and marathi["url_expires_in"] == 900
+    )
     # Storage not configured -> uploads refused clearly
     capp.state.course_storage = None
-    off = api.post(f"{C}/assets/uploads", json={"kind": "image", "filename": "a.png", "content_type": "image/png",
-                                                 "size_bytes": 10}, headers=OWNER)
+    off = api.post(
+        f"{C}/assets/uploads",
+        json={"kind": "image", "filename": "a.png", "content_type": "image/png", "size_bytes": 10},
+        headers=OWNER,
+    )
     assert off.status_code == 503 and error(off) == "storage_not_configured"
     assert ok(api.get(f"{C}/storage", headers=VIEWER))["configured"] is False
 
@@ -375,23 +584,49 @@ def test_study_materials_download_rules(api: TestClient, capp: FastAPI) -> None:
     storage: FakeStorage = capp.state.course_storage
     ids = []
     for name in ("notes.pdf", "answers.pdf"):
-        t = ok(api.post(f"{C}/assets/uploads", json={"kind": "document", "filename": name,
-                                                      "content_type": "application/pdf", "size_bytes": 100},
-                        headers=OWNER), 201)
+        t = ok(
+            api.post(
+                f"{C}/assets/uploads",
+                json={
+                    "kind": "document",
+                    "filename": name,
+                    "content_type": "application/pdf",
+                    "size_bytes": 100,
+                },
+                headers=OWNER,
+            ),
+            201,
+        )
         storage.objects[storage.tickets[-1][0]] = StoredObject(100, "application/pdf")
         ok(api.post(f"{C}/assets/{t['asset']['id']}/complete", headers=OWNER))
         ids.append(t["asset"]["id"])
     c = make_course(api)
-    notes = ok(api.post(f"{C}/lectures/{c['lecture_id']}/resources", json={"title": "Notes", "asset_id": ids[0]},
-                        headers=OWNER), 201)
-    locked = ok(api.post(f"{C}/lectures/{c['lecture_id']}/resources",
-                         json={"title": "Answer key", "asset_id": ids[1], "is_downloadable": False}, headers=OWNER), 201)
+    notes = ok(
+        api.post(
+            f"{C}/lectures/{c['lecture_id']}/resources",
+            json={"title": "Notes", "asset_id": ids[0]},
+            headers=OWNER,
+        ),
+        201,
+    )
+    locked = ok(
+        api.post(
+            f"{C}/lectures/{c['lecture_id']}/resources",
+            json={"title": "Answer key", "asset_id": ids[1], "is_downloadable": False},
+            headers=OWNER,
+        ),
+        201,
+    )
     url = f"{I}/{c['id']}/resources/{notes['id']}/download"
     assert error(api.get(url, params={"student_id": "stranger"}, headers=APP)) == "not_enrolled"
     ok(pay(api, c["id"], "reader"))
     link = ok(api.get(url, params={"student_id": "reader"}, headers=APP))
     assert link["url"].endswith("?name=notes.pdf")
-    denied = api.get(f"{I}/{c['id']}/resources/{locked['id']}/download", params={"student_id": "reader"}, headers=APP)
+    denied = api.get(
+        f"{I}/{c['id']}/resources/{locked['id']}/download",
+        params={"student_id": "reader"},
+        headers=APP,
+    )
     assert denied.status_code == 403 and error(denied) == "download_not_permitted"
 
 
@@ -400,33 +635,79 @@ def test_study_materials_download_rules(api: TestClient, capp: FastAPI) -> None:
 
 def test_paid_purchase_from_order_to_access(api: TestClient, capp: FastAPI) -> None:
     c = make_course(api)
-    order = ok(api.post(f"{I}/orders", json={"course_id": c["id"], "student_id": "buyer", "student_name": "Ravi",
-                                             "order_id": "order_1", "payment_provider": "razorpay"}, headers=APP))
+    order = ok(
+        api.post(
+            f"{I}/orders",
+            json={
+                "course_id": c["id"],
+                "student_id": "buyer",
+                "student_name": "Ravi",
+                "order_id": "order_1",
+                "payment_provider": "razorpay",
+            },
+            headers=APP,
+        )
+    )
     assert order["enrollment"]["status"] == "pending" and order["duplicate"] is False
-    again = ok(api.post(f"{I}/orders", json={"course_id": c["id"], "student_id": "buyer", "order_id": "order_1",
-                                             "payment_provider": "razorpay"}, headers=APP))
+    again = ok(
+        api.post(
+            f"{I}/orders",
+            json={
+                "course_id": c["id"],
+                "student_id": "buyer",
+                "order_id": "order_1",
+                "payment_provider": "razorpay",
+            },
+            headers=APP,
+        )
+    )
     assert again["duplicate"] is True and again["enrollment"]["id"] == order["enrollment"]["id"]
     pending = play(api, c["id"], c["lecture_id"], "buyer")
     assert pending.status_code == 403 and error(pending) == "enrollment_pending"
-    assert ok(api.get(f"{I}/{c['id']}/access", params={"student_id": "buyer"}, headers=APP))["status"] == "pending"
+    assert (
+        ok(api.get(f"{I}/{c['id']}/access", params={"student_id": "buyer"}, headers=APP))["status"]
+        == "pending"
+    )
 
-    for bad, code in ((dict(amount_paid="800"), "amount_mismatch"), (dict(amount_paid="500"), "amount_mismatch"),
-                      (dict(currency="USD"), "currency_mismatch")):
+    for bad, code in (
+        (dict(amount_paid="800"), "amount_mismatch"),
+        (dict(amount_paid="500"), "amount_mismatch"),
+        (dict(currency="USD"), "currency_mismatch"),
+    ):
         resp = pay(api, c["id"], "buyer", order_id="order_1", **bad)
         assert resp.status_code == 422 and error(resp) == code
-    confirmed = ok(pay(api, c["id"], "buyer", order_id="order_1", payment_id="pay_A", amount_paid="599",
-                       voucher_code="save200"))
+    confirmed = ok(
+        pay(
+            api,
+            c["id"],
+            "buyer",
+            order_id="order_1",
+            payment_id="pay_A",
+            amount_paid="599",
+            voucher_code="save200",
+        )
+    )
     e = confirmed["enrollment"]
     assert (e["id"], e["status"], e["amount_paid"], e["list_price"], e["voucher_code"]) == (
-        order["enrollment"]["id"], "active", "599", "799", "SAVE200")
+        order["enrollment"]["id"],
+        "active",
+        "599",
+        "799",
+        "SAVE200",
+    )
     assert e["validity_label"] == "6 months" and e["purchased_at"] == e["access_start_at"]
     access = ok(api.get(f"{I}/{c['id']}/access", params={"student_id": "buyer"}, headers=APP))
     assert access["status"] == "active" and "access until" in access["message"]
-    assert ok(play(api, c["id"], c["lecture_id"], "buyer"))["access_expires_at"] == e["access_expires_at"]
+    assert (
+        ok(play(api, c["id"], c["lecture_id"], "buyer"))["access_expires_at"]
+        == e["access_expires_at"]
+    )
     detail = ok(api.get(f"{C}/enrollments/{e['id']}", headers=VIEWER))
     assert [ev["event"] for ev in detail["events"]] == ["order_created", "payment_confirmed"]
     summary = ok(api.get(f"{C}/summary", headers=VIEWER))
-    assert summary["active_enrollments"] == 1 and summary["revenue"] == [{"currency": "INR", "amount": "599"}]
+    assert summary["active_enrollments"] == 1 and summary["revenue"] == [
+        {"currency": "INR", "amount": "599"}
+    ]
     mine = ok(api.get(f"{I}/students/buyer/enrollments", headers=APP))
     assert [m["status"] for m in mine] == ["active"]
 
@@ -435,14 +716,29 @@ def test_free_course_enrollment(api: TestClient) -> None:
     c = make_course(api, is_free=True, price=None, discounted_price=None, original_price=None)
     paid_attempt = pay(api, c["id"], "learner", amount_paid="0")
     assert paid_attempt.status_code == 409 and error(paid_attempt) == "course_is_free"
-    first = ok(api.post(f"{I}/enroll-free", json={"course_id": c["id"], "student_id": "learner"}, headers=APP))
+    first = ok(
+        api.post(
+            f"{I}/enroll-free", json={"course_id": c["id"], "student_id": "learner"}, headers=APP
+        )
+    )
     e = first["enrollment"]
-    assert (e["status"], e["source"], e["amount_paid"], e["payment_id"]) == ("active", "free", "0", None)
-    again = ok(api.post(f"{I}/enroll-free", json={"course_id": c["id"], "student_id": "learner"}, headers=APP))
+    assert (e["status"], e["source"], e["amount_paid"], e["payment_id"]) == (
+        "active",
+        "free",
+        "0",
+        None,
+    )
+    again = ok(
+        api.post(
+            f"{I}/enroll-free", json={"course_id": c["id"], "student_id": "learner"}, headers=APP
+        )
+    )
     assert again["duplicate"] is True and again["enrollment"]["id"] == e["id"]
     assert ok(play(api, c["id"], c["lecture_id"], "learner"))["video_url"]
     paid = make_course(api)
-    refused = api.post(f"{I}/enroll-free", json={"course_id": paid["id"], "student_id": "learner"}, headers=APP)
+    refused = api.post(
+        f"{I}/enroll-free", json={"course_id": paid["id"], "student_id": "learner"}, headers=APP
+    )
     assert refused.status_code == 409 and error(refused) == "course_is_paid"
 
 
@@ -457,26 +753,44 @@ def test_duplicate_payment_callbacks_create_one_enrollment(api: TestClient, capp
     # The same webhook delivered 12 times at once still yields exactly one enrollment
     settings = capp.state.settings
     ctx = CourseContext(CourseActor.COURSE_API, RequestContext(actor=Actor.SYSTEM))
-    body = PaymentConfirm(course_id=c["id"], student_id="racer", payment_id="pay_race",
-                          payment_provider="razorpay", amount_paid="799")
+    body = PaymentConfirm(
+        course_id=c["id"],
+        student_id="racer",
+        payment_id="pay_race",
+        payment_provider="razorpay",
+        amount_paid="799",
+    )
 
     def confirm(_: int) -> bool:
         with capp.state.session_factory() as s:
-            return CourseEnrollmentService(s, settings, None, IST).confirm_payment(body, ctx).duplicate
+            return (
+                CourseEnrollmentService(s, settings, None, IST).confirm_payment(body, ctx).duplicate
+            )
 
     with ThreadPoolExecutor(max_workers=6) as pool:
         results = list(pool.map(confirm, range(12)))
     assert results.count(False) == 1 and results.count(True) == 11
     with capp.state.session_factory() as s:
-        assert s.scalar(select(func.count()).select_from(CourseEnrollment)
-                        .where(CourseEnrollment.payment_id == "pay_race")) == 1
+        assert (
+            s.scalar(
+                select(func.count())
+                .select_from(CourseEnrollment)
+                .where(CourseEnrollment.payment_id == "pay_race")
+            )
+            == 1
+        )
 
 
 def test_refund_ends_access_but_keeps_history(api: TestClient) -> None:
     c = make_course(api)
     e = ok(pay(api, c["id"], "refundee", payment_id="pay_R"))["enrollment"]
-    refunded = ok(api.post(f"{I}/payments/reverse", json={"payment_id": "pay_R", "status": "refunded",
-                                                         "reason": "customer request"}, headers=APP))
+    refunded = ok(
+        api.post(
+            f"{I}/payments/reverse",
+            json={"payment_id": "pay_R", "status": "refunded", "reason": "customer request"},
+            headers=APP,
+        )
+    )
     assert refunded["status"] == "refunded"
     denied = play(api, c["id"], c["lecture_id"], "refundee")
     assert denied.status_code == 403 and error(denied) == "enrollment_refunded"
@@ -497,17 +811,27 @@ def test_validity_uses_calendar_months_from_each_purchase() -> None:
     assert b.astimezone(__import__("zoneinfo").ZoneInfo(IST)) == ist(2027, 6, 20, 18, 30)
     assert a.tzinfo == UTC
     # Month-end: 31 Jan + 1 month -> last day of February (leap and non-leap)
-    assert add_months(datetime(2027, 1, 31, 12), 1) == datetime(2027, 2, 28, 12)
-    assert add_months(datetime(2028, 1, 31, 12), 1) == datetime(2028, 2, 29, 12)
-    assert add_months(datetime(2026, 8, 31), 6) == datetime(2027, 2, 28)
-    assert add_months(datetime(2026, 10, 31), 7) == datetime(2027, 5, 31)
+    assert add_months(ist(2027, 1, 31, 12), 1) == ist(2027, 2, 28, 12)
+    assert add_months(ist(2028, 1, 31, 12), 1) == ist(2028, 2, 29, 12)
+    assert add_months(ist(2026, 8, 31), 6) == ist(2027, 2, 28)
+    assert add_months(ist(2026, 10, 31), 7) == ist(2027, 5, 31)
     # One year is one calendar year; 29 Feb + 1 year -> 28 Feb
-    assert access_expiry(ist(2026, 11, 10, 9, 0), 1, ValidityUnit.YEARS, IST) == ist(2027, 11, 10, 9, 0)
-    assert access_expiry(ist(2028, 2, 29, 9, 0), 1, ValidityUnit.YEARS, IST) == ist(2029, 2, 28, 9, 0)
-    assert access_expiry(ist(2026, 11, 10, 9, 0), 10, ValidityUnit.MONTHS, IST) == ist(2027, 9, 10, 9, 0)
-    assert access_expiry(ist(2026, 11, 10, 9, 0), 45, ValidityUnit.DAYS, IST) == ist(2026, 12, 25, 9, 0)
+    assert access_expiry(ist(2026, 11, 10, 9, 0), 1, ValidityUnit.YEARS, IST) == ist(
+        2027, 11, 10, 9, 0
+    )
+    assert access_expiry(ist(2028, 2, 29, 9, 0), 1, ValidityUnit.YEARS, IST) == ist(
+        2029, 2, 28, 9, 0
+    )
+    assert access_expiry(ist(2026, 11, 10, 9, 0), 10, ValidityUnit.MONTHS, IST) == ist(
+        2027, 9, 10, 9, 0
+    )
+    assert access_expiry(ist(2026, 11, 10, 9, 0), 45, ValidityUnit.DAYS, IST) == ist(
+        2026, 12, 25, 9, 0
+    )
     # The local date is what counts: 1 a.m. IST on 10 Nov is still 9 Nov in UTC
-    assert access_expiry(ist(2026, 11, 10, 1, 0), 6, ValidityUnit.MONTHS, IST) == ist(2027, 5, 10, 1, 0)
+    assert access_expiry(ist(2026, 11, 10, 1, 0), 6, ValidityUnit.MONTHS, IST) == ist(
+        2027, 5, 10, 1, 0
+    )
     with pytest.raises(ValueError):
         access_expiry(ist(2026, 1, 1), 11, ValidityUnit.YEARS, IST)
 
@@ -517,43 +841,78 @@ def test_purchase_example_from_the_requirements(api: TestClient, capp: FastAPI) 
     from zoneinfo import ZoneInfo  # noqa: PLC0415
 
     c = make_course(api, launch_at="2026-11-01T00:00:00+05:30")
-    settings, ctx = capp.state.settings, CourseContext(CourseActor.COURSE_API, RequestContext(actor=Actor.SYSTEM))
+    settings, ctx = (
+        capp.state.settings,
+        CourseContext(CourseActor.COURSE_API, RequestContext(actor=Actor.SYSTEM)),
+    )
     results = {}
-    for student, paid in (("A", datetime(2026, 11, 10, 11, 0, tzinfo=ZoneInfo(IST))),
-                          ("B", datetime(2026, 12, 20, 11, 0, tzinfo=ZoneInfo(IST)))):
+    for student, paid in (
+        ("A", datetime(2026, 11, 10, 11, 0, tzinfo=ZoneInfo(IST))),
+        ("B", datetime(2026, 12, 20, 11, 0, tzinfo=ZoneInfo(IST))),
+    ):
         with capp.state.session_factory() as s:
-            service = CourseEnrollmentService(s, settings, None, IST, clock=lambda p=paid: p.astimezone(UTC))
-            body = PaymentConfirm(course_id=c["id"], student_id=student, payment_id=f"pay_{student}",
-                                  payment_provider="razorpay", amount_paid="799", paid_at=paid)
+            service = CourseEnrollmentService(
+                s, settings, None, IST, clock=lambda p=paid: p.astimezone(UTC)
+            )
+            body = PaymentConfirm(
+                course_id=c["id"],
+                student_id=student,
+                payment_id=f"pay_{student}",
+                payment_provider="razorpay",
+                amount_paid="799",
+                paid_at=paid,
+            )
             results[student] = service.confirm_payment(body, ctx).enrollment
     local = lambda d: d.astimezone(ZoneInfo(IST)).date().isoformat()  # noqa: E731
-    assert (local(results["A"].access_start_at), local(results["A"].access_expires_at)) == ("2026-11-10", "2027-05-10")
-    assert (local(results["B"].access_start_at), local(results["B"].access_expires_at)) == ("2026-12-20", "2027-06-20")
+    assert (local(results["A"].access_start_at), local(results["A"].access_expires_at)) == (
+        "2026-11-10",
+        "2027-05-10",
+    )
+    assert (local(results["B"].access_start_at), local(results["B"].access_expires_at)) == (
+        "2026-12-20",
+        "2027-06-20",
+    )
 
 
-# --- 12. existing enrollments keep their validity ---------------------------------------------------
+# --- 12. existing enrollments keep their validity ------------------------------------------
 
 
-def test_changing_course_validity_never_changes_existing_enrollments(api: TestClient, capp: FastAPI) -> None:
+def test_changing_course_validity_never_changes_existing_enrollments(
+    api: TestClient, capp: FastAPI
+) -> None:
     c = make_course(api)
     before = ok(pay(api, c["id"], "early"))["enrollment"]
     assert before["validity_label"] == "6 months"
     detail = ok(api.get(f"{C}/{c['id']}", headers=OWNER))
-    edit = {**course_body(class_id=detail["class_id"], subject_id=detail["subject_id"]),
-            "validity_value": 1, "validity_unit": "years", "price": "1999", "discounted_price": None,
-            "original_price": None, "version": detail["version"]}
+    edit = {
+        **course_body(class_id=detail["class_id"], subject_id=detail["subject_id"]),
+        "validity_value": 1,
+        "validity_unit": "years",
+        "price": "1999",
+        "discounted_price": None,
+        "original_price": None,
+        "version": detail["version"],
+    }
     ok(api.put(f"{C}/{c['id']}", json=edit, headers=OWNER))
     after = ok(api.get(f"{C}/enrollments/{before['id']}", headers=OWNER))
     assert (after["access_expires_at"], after["validity_label"], after["list_price"]) == (
-        before["access_expires_at"], "6 months", "799")
+        before["access_expires_at"],
+        "6 months",
+        "799",
+    )
     late = ok(pay(api, c["id"], "late", amount_paid="1999"))["enrollment"]
     assert late["validity_label"] == "1 year" and late["list_price"] == "1999"
     start = datetime.fromisoformat(late["access_start_at"])
-    assert datetime.fromisoformat(late["access_expires_at"]) == access_expiry(start, 1, ValidityUnit.YEARS, IST)
+    assert datetime.fromisoformat(late["access_expires_at"]) == access_expiry(
+        start, 1, ValidityUnit.YEARS, IST
+    )
     # Same through the service directly: an update never writes to enrollments
     with capp.state.session_factory() as s:
         rows = s.scalars(select(CourseEnrollment).order_by(CourseEnrollment.id)).all()
-        assert [(r.validity_value, r.validity_unit) for r in rows] == [(6, ValidityUnit.MONTHS), (1, ValidityUnit.YEARS)]
+        assert [(r.validity_value, r.validity_unit) for r in rows] == [
+            (6, ValidityUnit.MONTHS),
+            (1, ValidityUnit.YEARS),
+        ]
 
 
 # --- 13. expiry and 14. unauthorised access -----------------------------------------------------
@@ -563,9 +922,14 @@ def test_expired_access_is_refused_and_recorded(api: TestClient, capp: FastAPI) 
     c = make_course(api)
     e = ok(pay(api, c["id"], "lapsed"))["enrollment"]
     with capp.state.session_factory() as s, s.begin():
-        s.execute(update(CourseEnrollment).where(CourseEnrollment.id == e["id"])
-                  .values(access_start_at=datetime.now(UTC) - timedelta(days=200),
-                          access_expires_at=datetime.now(UTC) - timedelta(minutes=1)))
+        s.execute(
+            update(CourseEnrollment)
+            .where(CourseEnrollment.id == e["id"])
+            .values(
+                access_start_at=datetime.now(UTC) - timedelta(days=200),
+                access_expires_at=datetime.now(UTC) - timedelta(minutes=1),
+            )
+        )
     denied = play(api, c["id"], c["lecture_id"], "lapsed")
     assert denied.status_code == 403 and error(denied) == "course_access_expired"
     assert "expired on" in denied.json()["error"]["message"]
@@ -575,9 +939,15 @@ def test_expired_access_is_refused_and_recorded(api: TestClient, capp: FastAPI) 
     assert [i["id"] for i in listing["items"]] == [e["id"]]
     with capp.state.session_factory() as s:
         row = s.get(CourseEnrollment, e["id"])
-        assert row.status is EnrollmentStatus.EXPIRED and row.payment_id == e["payment_id"]  # history kept
-        assert [ev.event for ev in s.scalars(select(EnrollmentEvent).where(EnrollmentEvent.enrollment_id == e["id"]))] \
-            == ["payment_confirmed", "expired"]
+        assert (
+            row.status is EnrollmentStatus.EXPIRED and row.payment_id == e["payment_id"]
+        )  # history kept
+        assert [
+            ev.event
+            for ev in s.scalars(
+                select(EnrollmentEvent).where(EnrollmentEvent.enrollment_id == e["id"])
+            )
+        ] == ["payment_confirmed", "expired"]
     # The free preview is still open to everyone
     assert ok(play(api, c["id"], c["preview_lecture_id"], "lapsed"))["free_preview"] is True
     # Buying again starts a new validity from the new purchase
@@ -602,7 +972,13 @@ def test_students_without_access_are_refused(api: TestClient) -> None:
     assert cross.status_code == 404
     # Cancelling (an explicit admin action) ends access
     enrollment = ok(api.get(f"{I}/students/owner-of-it/enrollments", headers=APP))[0]
-    ok(api.post(f"{C}/enrollments/{enrollment['id']}/cancel", json={"reason": "chargeback"}, headers=OWNER))
+    ok(
+        api.post(
+            f"{C}/enrollments/{enrollment['id']}/cancel",
+            json={"reason": "chargeback"},
+            headers=OWNER,
+        )
+    )
     assert error(play(api, c["id"], c["lecture_id"], "owner-of-it")) == "enrollment_cancelled"
 
 
@@ -614,18 +990,26 @@ def test_admin_and_integration_permissions(api: TestClient) -> None:
     # Viewer: read-only
     assert api.get(C, headers=VIEWER).status_code == 200
     assert api.get(f"{C}/enrollments", headers=VIEWER).status_code == 200
-    for method, path, body in (("post", C, course_body()), ("post", f"{C}/{c['id']}/publish", None),
-                               ("delete", f"{C}/{c['id']}", None),
-                               ("post", f"{C}/taxonomy", {"kind": "class", "name": "X"}),
-                               ("post", f"{C}/assets/uploads", {"kind": "image", "filename": "a.png",
-                                                                "content_type": "image/png", "size_bytes": 1})):
-        assert getattr(api, method)(path, json=body, headers=VIEWER).status_code == 403, path
+    for method, path, body in (
+        ("post", C, course_body()),
+        ("post", f"{C}/{c['id']}/publish", None),
+        ("delete", f"{C}/{c['id']}", None),
+        ("post", f"{C}/taxonomy", {"kind": "class", "name": "X"}),
+        (
+            "post",
+            f"{C}/assets/uploads",
+            {"kind": "image", "filename": "a.png", "content_type": "image/png", "size_bytes": 1},
+        ),
+    ):
+        assert api.request(method.upper(), path, json=body, headers=VIEWER).status_code == 403, path
     # No credentials
     assert api.get(C).status_code == 401
     # The app token reaches only the integration API
     assert api.get(C, headers=APP).status_code == 401
     assert api.get(f"{I}/catalog", headers=OWNER).status_code == 401
-    assert api.get(f"{I}/catalog", headers={"Authorization": "Bearer wrong-token"}).status_code == 401
+    assert (
+        api.get(f"{I}/catalog", headers={"Authorization": "Bearer wrong-token"}).status_code == 401
+    )
     assert api.get(f"{I}/catalog", headers=APP).status_code == 200
 
 
@@ -640,15 +1024,27 @@ def test_course_service_update_ignores_enrollments(capp: FastAPI, api: TestClien
     ok(pay(api, c["id"], "snap"))
     ctx = CourseContext(CourseActor.OWNER, RequestContext(actor=Actor.OWNER))
     with capp.state.session_factory() as s:
-        before = [(r.validity_value, r.access_expires_at, r.list_price) for r in s.scalars(select(CourseEnrollment))]
+        before = [
+            (r.validity_value, r.access_expires_at, r.list_price)
+            for r in s.scalars(select(CourseEnrollment))
+        ]
         detail = CourseService(s, capp.state.settings, None).detail(c["id"])
-        body = CourseUpdate(**{**course_body(class_id=detail.class_id, subject_id=detail.subject_id),
-                               "validity_value": 10, "price": "2999", "discounted_price": None,
-                               "original_price": None, "version": detail.version})
+        body = CourseUpdate(
+            **{
+                **course_body(class_id=detail.class_id, subject_id=detail.subject_id),
+                "validity_value": 10,
+                "price": "2999",
+                "discounted_price": None,
+                "original_price": None,
+                "version": detail.version,
+            }
+        )
         CourseService(s, capp.state.settings, None).update(c["id"], body, ctx)
     with capp.state.session_factory() as s:
-        after = [(r.validity_value, r.access_expires_at, r.list_price) for r in s.scalars(select(CourseEnrollment))]
+        after = [
+            (r.validity_value, r.access_expires_at, r.list_price)
+            for r in s.scalars(select(CourseEnrollment))
+        ]
     assert after == before and before[0][2] == Decimal("799")
-    with pytest.raises(ConflictError):  # and a stale version is refused
-        with capp.state.session_factory() as s:
-            CourseService(s, capp.state.settings, None).update(c["id"], body, ctx)
+    with pytest.raises(ConflictError), capp.state.session_factory() as s:  # stale version refused
+        CourseService(s, capp.state.settings, None).update(c["id"], body, ctx)
