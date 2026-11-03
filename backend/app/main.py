@@ -30,9 +30,11 @@ from app.notifications.smtp import SmtpSender
 from app.ops.service import OperationsService
 from app.ops.storage import permission_findings
 from app.providers.registry import ProviderRuntime, build_runtimes
+from app.services.app_users import build_app_users_source
 from app.services.course_storage import build_course_storage
 from app.services.health import ReadinessService
 from app.services.polling import PollingCoordinator, PollingScheduler
+from app.services.presence import PresenceTracker
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +106,8 @@ def create_app(
             await scheduler.stop()
         await app.state.coordinator.aclose()
         engine.dispose()
+        if app.state.app_users_source is not None:
+            app.state.app_users_source.close()
         logger.info("application stopped")
 
     app = FastAPI(
@@ -130,6 +134,10 @@ def create_app(
     app.state.attempt_limiter = AttemptLimiter(app.state.session_factory, settings)
     # Course files (S3). None = not configured: uploads are refused, video URLs still work.
     app.state.course_storage = build_course_storage(settings)
+    # App Users (AdhyaapakAI MongoDB, read-only). None = not configured; connects lazily.
+    app.state.app_users_source = build_app_users_source(settings)
+    # Who has the mobile app open right now (heartbeats; in memory, one worker).
+    app.state.presence = PresenceTracker()
     app.state.smtp_sender = smtp_sender or SmtpSender(settings)
     app.state.dispatcher = OutboxDispatcher(
         app.state.session_factory, settings, app.state.smtp_sender

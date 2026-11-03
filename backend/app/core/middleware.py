@@ -14,6 +14,7 @@ from app.core.errors import internal_error_response
 from app.core.logging import request_id_var
 
 logger = logging.getLogger("app.access")
+QUIET_PATHS = frozenset({"/api/v1/integrations/presence/heartbeat"})
 
 _VALID_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
@@ -100,7 +101,10 @@ class RequestContextMiddleware:
                 raise
             await internal_error_response()(scope, receive, send_wrapper)
         finally:
-            logger.info(
+            # Successful app heartbeats arrive every 30 s per open app: keep them out of INFO.
+            quiet = path in QUIET_PATHS and status_code < 400
+            logger.log(
+                logging.DEBUG if quiet else logging.INFO,
                 "%s %s %s",
                 scope.get("method"),
                 path,  # path only: query strings may carry sensitive values

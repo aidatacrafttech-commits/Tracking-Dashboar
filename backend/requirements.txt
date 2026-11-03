@@ -11,3 +11,6 @@ tzdata==2026.5
 httpx==0.28.1
 boto3==1.43.111
 botocore==1.43.111
+# App Users screen: read-only queries against the AdhyaapakAI MongoDB (pulls in dnspython
+# for mongodb+srv:// URLs).
+pymongo==4.19.0

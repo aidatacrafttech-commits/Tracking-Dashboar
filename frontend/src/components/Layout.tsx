@@ -3,7 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAppSettings, useOpsStatus } from "../api/hooks";
 import { useAuth } from "../auth/AuthContext";
 import { useLiveState } from "../live/LiveUpdates";
-import { IconAlerts, IconBook, IconUserX, IconCloud, IconLogo, IconMenu, IconOverview, IconPayments, IconProviders, IconThresholds, IconTicket } from "./icons";
+import { IconAlerts, IconBook, IconUserX, IconCloud, IconLogo, IconMenu, IconOverview, IconPayments, IconProviders, IconThresholds, IconTicket, IconUsers } from "./icons";
 
 const NAV = [
   { to: "/", label: "Overview", icon: IconOverview, end: true },
@@ -14,6 +14,7 @@ const NAV = [
   { to: "/aws", label: "AWS", icon: IconCloud },
   { to: "/vouchers", label: "Voucher Management", icon: IconTicket },
   { to: "/courses", label: "Course Management", icon: IconBook },
+  { to: "/app-users", label: "App Users", icon: IconUsers },
   { to: "/account-deletions", label: "Account Deletions", icon: IconUserX },
 ];
 

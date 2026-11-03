@@ -12,6 +12,7 @@ from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import unquote, urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -200,6 +201,16 @@ class Settings(BaseSettings):
     adhyaapak_api_base_url: str | None = Field(default=None, pattern=r"^https?://[^\s/?#]+$")
     adhyaapak_admin_secret: SecretStr | None = None
 
+    # --- AdhyaapakAI MongoDB (App Users screen) -----------------------------------------
+    # Read-only analytics over the app's users: the dashboard SERVER connects; the URL never
+    # reaches the browser or the logs. Use an Atlas user with only the "read" role on this
+    # database. Both empty = the screen shows "not configured".
+    adhyaapak_mongo_url: SecretStr | None = None
+    adhyaapak_mongo_db: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    # Live "online now": the mobile app sends heartbeats signed with its own login token; the
+    # dashboard verifies them with the AdhyaapakAI backend's JWT_SECRET. Unset = presence off.
+    adhyaapak_jwt_secret: SecretStr | None = None
+
     # --- Course management ----------------------------------------------------------
     # Bearer token for the trusted app backend (it verifies payments and authenticates
     # students) to confirm payments, enroll students and check access. Unset = API off.
@@ -363,6 +374,9 @@ class Settings(BaseSettings):
         "course_assets_bucket",
         "adhyaapak_api_base_url",
         "adhyaapak_admin_secret",
+        "adhyaapak_mongo_url",
+        "adhyaapak_mongo_db",
+        "adhyaapak_jwt_secret",
         "course_assets_access_key_id",
         "course_assets_secret_access_key",
         mode="before",
@@ -422,6 +436,12 @@ class Settings(BaseSettings):
                 "set both COURSE_ASSETS_ACCESS_KEY_ID and COURSE_ASSETS_SECRET_ACCESS_KEY,"
                 " or neither"
             )
+        if (self.adhyaapak_mongo_url is None) != (self.adhyaapak_mongo_db is None):
+            raise ValueError("set both ADHYAAPAK_MONGO_URL and ADHYAAPAK_MONGO_DB, or neither")
+        if self.adhyaapak_mongo_url is not None and not re.match(
+            r"^mongodb(\+srv)?://\S+$", self.adhyaapak_mongo_url.get_secret_value()
+        ):
+            raise ValueError("ADHYAAPAK_MONGO_URL must start with mongodb:// or mongodb+srv://")
         if self.app_env == "production":
             # API schema is not needed in production and widens the attack surface.
             self.docs_enabled = False
@@ -448,8 +468,17 @@ class Settings(BaseSettings):
             self.course_assets_access_key_id,
             self.course_assets_secret_access_key,
             self.adhyaapak_admin_secret,
+            self.adhyaapak_mongo_url,
+            self.adhyaapak_jwt_secret,
         ]
-        return [c.get_secret_value() for c in candidates if c is not None]
+        values = [c.get_secret_value() for c in candidates if c is not None]
+        # The redactor has no pattern for URI userinfo, so also register the bare password
+        # (a driver error could quote it without the rest of the URL).
+        if self.adhyaapak_mongo_url is not None:
+            userinfo = urlsplit(self.adhyaapak_mongo_url.get_secret_value()).password
+            if userinfo:
+                values += [userinfo, unquote(userinfo)]
+        return values
 
     @property
     def resolved_database_url(self) -> str:

@@ -49,6 +49,10 @@ os.environ.update(
         # Never reach the real AdhyaapakAI backend with the real admin secret from backend/.env.
         "ADHYAAPAK_API_BASE_URL": "",
         "ADHYAAPAK_ADMIN_SECRET": "",
+        # ...and never read the real app database (ADHYAAPAK_MONGO_URL in backend/.env).
+        "ADHYAAPAK_MONGO_URL": "",
+        "ADHYAAPAK_MONGO_DB": "",
+        "ADHYAAPAK_JWT_SECRET": "",
     }
 )
 
