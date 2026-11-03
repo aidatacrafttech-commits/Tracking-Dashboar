@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { createContext, useContext, useId, useRef, useState } from "react";
 import { ApiError } from "../../api/client";
 import { completeUpload, requestUpload, useStorageStatus } from "./api";
 import type { AssetKind, AssetRef } from "./types";
@@ -12,12 +12,16 @@ const ACCEPT: Record<AssetKind, string> = {
 };
 const FALLBACK_TYPES: Record<string, string> = { ".vtt": "text/vtt", ".srt": "application/x-subrip", ".m4a": "audio/mp4" };
 
+/** The course being edited: its files are stored under {prefix}{course_id}/ (the AdhyaapakAI
+ * layout). Outside a course (a new course's thumbnail) files go under {prefix}shared/. */
+export const CourseScope = createContext<number | undefined>(undefined);
+
 /** Browser -> S3 (presigned POST, so the file never passes through this server), then the
  * server verifies the stored object before the file can be used. */
-export function uploadToStorage(kind: AssetKind, file: File, onProgress: (pct: number) => void): Promise<AssetRef> {
+export function uploadToStorage(kind: AssetKind, file: File, onProgress: (pct: number) => void, courseId?: number): Promise<AssetRef> {
   const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
   const contentType = file.type || FALLBACK_TYPES[ext] || "application/octet-stream";
-  return requestUpload({ kind, filename: file.name, content_type: contentType, size_bytes: file.size }).then(
+  return requestUpload({ kind, filename: file.name, content_type: contentType, size_bytes: file.size, course_id: courseId }).then(
     (ticket) =>
       new Promise<AssetRef>((resolve, reject) => {
         const form = new FormData();
@@ -51,6 +55,7 @@ export function FileField({
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const storage = useStorageStatus();
+  const courseId = useContext(CourseScope);
   const [progress, setProgress] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const configured = storage.data?.configured ?? false;
@@ -60,7 +65,7 @@ export function FileField({
     setProblem(null);
     setProgress(0);
     try {
-      const asset = await uploadToStorage(kind, file, setProgress);
+      const asset = await uploadToStorage(kind, file, setProgress, courseId);
       onChange({ id: asset.id, name: asset.filename });
     } catch (err) {
       setProblem(err instanceof ApiError ? (Object.values(err.fieldErrors())[0] ?? err.message) : err instanceof Error ? err.message : "Upload failed.");

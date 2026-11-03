@@ -284,13 +284,16 @@ describe("provider detail", () => {
 
 describe("live updates", () => {
   it("refetches only the affected data when the server reports a change", async () => {
+    // The test decides when the server reports the change (after counting the first
+    // load), so a slow first render can't race the event.
+    let reportChange: () => void = () => undefined;
     server.use(
       http.get("*/api/v1/events", () => {
         const enc = new TextEncoder();
         const body = new ReadableStream<Uint8Array>({
           start(controller) {
             controller.enqueue(enc.encode('event: ready\ndata: {"topics":[]}\n\n'));
-            setTimeout(() => controller.enqueue(enc.encode('event: changed\ndata: {"topics":["payments"]}\n\n')), 50);
+            reportChange = () => controller.enqueue(enc.encode('event: changed\ndata: {"topics":["payments"]}\n\n'));
           },
         });
         return new HttpResponse(body, { headers: { "Content-Type": "text/event-stream" } });
@@ -298,8 +301,10 @@ describe("live updates", () => {
     );
     renderApp("/payments");
     await screen.findByText("INV-1");
+    expect(await screen.findByText("Live updates on")).toBeInTheDocument();
     const payments = () => requests.filter((r) => r.url.pathname === "/api/v1/payments").length;
     const before = payments();
+    reportChange();
     await waitFor(() => expect(payments()).toBeGreaterThan(before), { timeout: 3000 });
     // the stream rides on the session cookie: no token in a header or the URL
     const stream = requests.find((r) => r.url.pathname === "/api/v1/events")!;

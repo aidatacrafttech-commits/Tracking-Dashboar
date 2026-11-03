@@ -40,6 +40,8 @@ export const IconRefresh = (p: IconProps) => base(p, <><path d="M21 12a9 9 0 1 1
 export const IconPlus = (p: IconProps) => base(p, <path d="M12 5v14M5 12h14" />);
 export const IconMenu = (p: IconProps) => base(p, <path d="M3 6h18M3 12h18M3 18h18" />);
 export const IconClose = (p: IconProps) => base(p, <path d="M18 6 6 18M6 6l12 12" />);
+export const IconBook = (p: IconProps) => base(p, <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>);
+export const IconUserX = (p: IconProps) => base(p, <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="m17 8 5 5M22 8l-5 5" /></>);
 export const IconCopy = (p: IconProps) => base(p, <><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></>);
 export const IconClock = (p: IconProps) => base(p, <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>);
 export const IconSort = (p: IconProps & { direction?: "ascending" | "descending" | "none" }) => {

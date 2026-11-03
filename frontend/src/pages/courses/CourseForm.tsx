@@ -40,7 +40,8 @@ export function CourseForm({
       await onSubmit(toCourseInput(form));
     } catch (err) {
       if (err instanceof ApiError) {
-        const fields = err.fieldErrors();
+        // The API names money fields *_paise; the inputs take rupees.
+        const fields = Object.fromEntries(Object.entries(err.fieldErrors()).map(([k, m]) => [k.replace(/_paise$/, ""), m]));
         const known = Object.fromEntries(Object.entries(fields).filter(([k]) => FIELDS.has(k)));
         const other = Object.entries(fields).filter(([k]) => !FIELDS.has(k)).map(([, m]) => m);
         setErrors({ ...known, ...(other.length || !Object.keys(known).length ? { form: other.join(" ") || err.message } : {}) });

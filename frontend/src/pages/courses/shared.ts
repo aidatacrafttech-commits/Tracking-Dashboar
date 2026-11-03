@@ -23,10 +23,28 @@ export const ENROLLMENT_INFO: Record<EnrollmentStatus, StatusInfo> = {
   refunded: { tone: "critical", label: "Refunded" },
 };
 
+/** The AdhyaapakAI app's language codes (its services/course_layout.LANGUAGES). */
 export const LANGUAGES: Record<string, string> = {
-  en: "English", hi: "Hindi", bho: "Bhojpuri", mr: "Marathi", ta: "Tamil", te: "Telugu", bn: "Bengali",
-  gu: "Gujarati", kn: "Kannada", ml: "Malayalam", pa: "Punjabi", or: "Odia", ur: "Urdu", as: "Assamese",
+  hinglish: "Hinglish", english: "English", hindi: "Hindi", marathi: "Marathi", bengali: "Bengali", odia: "Odia",
+  gujarati: "Gujarati", tamil: "Tamil", malayalam: "Malayalam", kannada: "Kannada", telugu: "Telugu", punjabi: "Punjabi",
 };
+
+/** 79900 -> "799.00" (exact: integer arithmetic, no floating point). */
+export function paiseToRupees(paise: number | null | undefined): string | null {
+  if (paise === null || paise === undefined) return null;
+  const sign = paise < 0 ? "-" : "";
+  const abs = Math.abs(Math.trunc(paise));
+  return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
+}
+
+/** "799.5" -> 79950; null for an empty or malformed amount. */
+export function rupeesToPaise(value: string): number | null {
+  const m = /^(\d{1,10})(?:\.(\d{1,2}))?$/.exec(value.trim());
+  if (!m) return null;
+  return Number(m[1]) * 100 + Number((m[2] ?? "").padEnd(2, "0"));
+}
+
+export const money = (paise: number | null | undefined, currency: string) => formatMoney(paiseToRupees(paise), currency);
 
 /** Validity presets offered in the form; "custom" opens value + unit. */
 export const VALIDITY_PRESETS: { id: string; label: string; value: number; unit: ValidityUnit }[] = [
@@ -37,10 +55,9 @@ export const VALIDITY_PRESETS: { id: string; label: string; value: number; unit:
 ];
 const MAX_VALIDITY: Record<ValidityUnit, number> = { days: 3650, months: 120, years: 10 };
 
-export function priceLabel(c: Pick<Course, "is_free" | "currency" | "price" | "discounted_price" | "original_price">): string {
+export function priceLabel(c: Pick<Course, "is_free" | "currency" | "price_paise" | "discounted_price_paise">): string {
   if (c.is_free) return "Free";
-  const sale = c.discounted_price ?? c.price;
-  return formatMoney(sale, c.currency);
+  return money(c.discounted_price_paise ?? c.price_paise, c.currency);
 }
 
 export function duration(seconds: number | null): string {
@@ -84,8 +101,9 @@ export function formFromCourse(c: Course): CourseForm {
     title: c.title, description: c.description ?? "", goals: c.goals ?? "", thumbnail_asset_id: c.thumbnail?.id ?? null,
     thumbnail_name: c.thumbnail?.filename ?? null, class_id: c.class_id ? String(c.class_id) : "",
     stream_id: c.stream_id ? String(c.stream_id) : "", subject_id: c.subject_id ? String(c.subject_id) : "",
-    is_free: c.is_free, currency: c.currency, price: c.price ?? "", original_price: c.original_price ?? "",
-    discounted_price: c.discounted_price ?? "", launch_at: isoToIstInput(c.launch_at),
+    is_free: c.is_free, currency: c.currency, price: paiseToRupees(c.price_paise) ?? "",
+    original_price: paiseToRupees(c.original_price_paise) ?? "", discounted_price: paiseToRupees(c.discounted_price_paise) ?? "",
+    launch_at: isoToIstInput(c.launch_at),
     validity_preset: preset ? preset.id : "custom", validity_value: String(c.validity_value), validity_unit: c.validity_unit,
   };
 }
@@ -119,7 +137,7 @@ export function validateCourse(f: CourseForm): Record<string, string> {
 
 export function toCourseInput(f: CourseForm): CourseInput {
   const preset = VALIDITY_PRESETS.find((p) => p.id === f.validity_preset);
-  const money = (v: string) => (v.trim() ? v.trim() : null);
+  const paise = (v: string) => (v.trim() ? rupeesToPaise(v) : null);
   const id = (v: string) => (v ? Number(v) : null);
   return {
     title: f.title.trim(),
@@ -131,9 +149,9 @@ export function toCourseInput(f: CourseForm): CourseInput {
     subject_id: id(f.subject_id),
     is_free: f.is_free,
     currency: f.currency,
-    price: f.is_free ? null : money(f.price),
-    original_price: f.is_free ? null : money(f.original_price),
-    discounted_price: f.is_free ? null : money(f.discounted_price),
+    price_paise: f.is_free ? null : paise(f.price),
+    original_price_paise: f.is_free ? null : paise(f.original_price),
+    discounted_price_paise: f.is_free ? null : paise(f.discounted_price),
     launch_at: f.launch_at ? istInputToIso(f.launch_at) : null,
     validity_value: preset ? preset.value : Number(f.validity_value),
     validity_unit: preset ? preset.unit : f.validity_unit,

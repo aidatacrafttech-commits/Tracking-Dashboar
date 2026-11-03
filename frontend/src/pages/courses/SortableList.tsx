@@ -25,6 +25,9 @@ export function SortableList<T extends { id: number }>({
   return (
     <ol className="sortable">
       {items.map((item, index) => (
+        // Drag-and-drop is a mouse shortcut; the Move up / Move down buttons are the
+        // keyboard and screen-reader equivalent.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <li
           key={item.id}
           className={`sortable-item ${dragging === item.id ? "dragging" : ""} ${over === item.id ? "drag-over" : ""}`}

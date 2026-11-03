@@ -1090,3 +1090,114 @@ details.chart-data summary {
 .copy-btn:hover {
   color: var(--text);
 }
+
+/* Course management: content builder, thumbnails, history */
+.thumb {
+  width: 48px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex: none;
+  background: var(--surface-2);
+}
+.thumb-empty {
+  display: inline-block;
+  border: 1px dashed var(--border);
+}
+.plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.content-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.content-row > :first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.content-node {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 8px 10px;
+}
+.content-node.playlist {
+  background: var(--surface-2);
+}
+.content-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 36px;
+}
+.content-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.content-children {
+  margin-top: 8px;
+}
+.collapse-btn {
+  min-width: 30px;
+}
+.sortable {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sortable-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.sortable-item.dragging {
+  opacity: 0.5;
+}
+.sortable-item.drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.sortable-body {
+  flex: 1;
+  min-width: 0;
+}
+.sortable-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-top: 4px;
+}
+.drag-handle {
+  cursor: grab;
+  color: var(--text-3);
+  letter-spacing: -2px;
+  user-select: none;
+}
+.timeline {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+progress {
+  width: 100%;
+  height: 8px;
+}

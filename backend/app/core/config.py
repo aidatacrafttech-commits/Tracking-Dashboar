@@ -193,6 +193,13 @@ class Settings(BaseSettings):
     # Starting user limit; the owner can change it at runtime (stored in the database).
     voucher_default_user_limit: int = Field(default=1000, ge=1, le=10_000_000)
 
+    # --- AdhyaapakAI admin API (Account Deletions screen) ------------------------------
+    # The dashboard SERVER calls the AdhyaapakAI backend with this secret (x-admin-secret);
+    # the browser only ever calls this dashboard, so the secret never reaches a bundle.
+    # e.g. https://api.adhyaapak.ai (live) or http://127.0.0.1:8001 (local). Unset = off.
+    adhyaapak_api_base_url: str | None = Field(default=None, pattern=r"^https?://[^\s/?#]+$")
+    adhyaapak_admin_secret: SecretStr | None = None
+
     # --- Course management ----------------------------------------------------------
     # Bearer token for the trusted app backend (it verifies payments and authenticates
     # students) to confirm payments, enroll students and check access. Unset = API off.
@@ -204,7 +211,11 @@ class Settings(BaseSettings):
         default=None, pattern=r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
     )
     course_assets_region: str = Field(default="ap-south-1", pattern=r"^[a-z]{2}-[a-z]+-\d$")
-    course_assets_prefix: str = Field(default="courses/", pattern=r"^[A-Za-z0-9!_.*'()/-]{0,200}$")
+    # Objects go to {prefix}{course_id}/{asset_id}-{file}. Never under videos/ or notes/: the
+    # AdhyaapakAI backend's S3 sync parses those keys if the bucket is ever shared with it.
+    course_assets_prefix: str = Field(
+        default="course-assets/", pattern=r"^[A-Za-z0-9!_.*'()-][A-Za-z0-9!_.*'()/-]{0,198}/$"
+    )
     course_assets_access_key_id: SecretStr | None = None
     course_assets_secret_access_key: SecretStr | None = None
     course_assets_url_ttl_seconds: int = Field(default=900, ge=60, le=43_200)
@@ -217,6 +228,13 @@ class Settings(BaseSettings):
         if not self.course_assets_bucket:
             return None
         return f"https://{self.course_assets_bucket}.s3.{self.course_assets_region}.amazonaws.com"
+
+    @field_validator("course_assets_prefix")
+    @classmethod
+    def _course_prefix(cls, value: str) -> str:
+        if value.lower().startswith(("videos/", "notes/")):
+            raise ValueError("course files cannot live under videos/ or notes/")
+        return value
 
     @field_validator("alert_recipients", mode="before")
     @classmethod
@@ -343,6 +361,8 @@ class Settings(BaseSettings):
         "voucher_api_token",
         "course_api_token",
         "course_assets_bucket",
+        "adhyaapak_api_base_url",
+        "adhyaapak_admin_secret",
         "course_assets_access_key_id",
         "course_assets_secret_access_key",
         mode="before",
@@ -427,6 +447,7 @@ class Settings(BaseSettings):
             self.course_api_token,
             self.course_assets_access_key_id,
             self.course_assets_secret_access_key,
+            self.adhyaapak_admin_secret,
         ]
         return [c.get_secret_value() for c in candidates if c is not None]
 

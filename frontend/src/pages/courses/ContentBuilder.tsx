@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "../../api/client";
 import { ConfirmDialog, Dialog } from "../../components/Dialog";
 import { IconPlus } from "../../components/icons";
 import { useToast } from "../../components/Toast";
 import { Badge, EmptyState, Notice } from "../../components/ui";
-import { useDeleteNode, useReorder, useSaveNode, type LectureBody } from "./api";
+import { useDeleteNode, useReorder, useSaveNode, type LectureBody, COURSES_API } from "./api";
 import { FileField } from "./FileField";
 import { LectureEditor } from "./LectureEditor";
 import { duration, LANGUAGES } from "./shared";
@@ -61,57 +61,51 @@ export function ContentBuilder({ course, canWrite }: { course: CourseDetail; can
       <span className="actions-cell">
         <button type="button" className="btn btn-sm" onClick={() => setLectureId(l.id)} aria-label={`Open lecture ${l.title}`}>{canWrite ? "Edit" : "View"}</button>
         {canWrite && <button type="button" className="btn btn-sm btn-danger" aria-label={`Delete lecture ${l.title}`}
-          onClick={() => setDeleting({ path: `/courses/lectures/${l.id}`, label: `Lecture “${l.title}”`, detail: "Its language versions and study materials are removed too." })}>Delete</button>}
+          onClick={() => setDeleting({ path: `${COURSES_API}/lectures/${l.id}`, label: `Lecture “${l.title}”`, detail: "Its language versions and study materials are removed too." })}>Delete</button>}
       </span>
     </div>
   );
 
   const chapterRow = (ch: Chapter) => (
-    <details className="content-node" open>
-      <summary>
-        <span><strong>{ch.title}</strong> <span className="small muted">· {ch.lectures.length} lecture(s)</span></span>
-        {canWrite && (
+    <Collapsible className="content-node" title={<><strong>{ch.title}</strong> <span className="small muted">· {ch.lectures.length} lecture(s)</span></>}
+      label={`chapter ${ch.title}`} actions={canWrite && (
           <span className="actions-cell">
             <button type="button" className="btn btn-sm" onClick={() => setEditing({ kind: "chapter", parentId: 0, node: ch })} aria-label={`Edit chapter ${ch.title}`}>Edit</button>
             <button type="button" className="btn btn-sm btn-danger" aria-label={`Delete chapter ${ch.title}`}
-              onClick={() => setDeleting({ path: `/courses/chapters/${ch.id}`, label: `Chapter “${ch.title}”`, detail: "All its lectures are removed too." })}>Delete</button>
+              onClick={() => setDeleting({ path: `${COURSES_API}/chapters/${ch.id}`, label: `Chapter “${ch.title}”`, detail: "All its lectures are removed too." })}>Delete</button>
           </span>
-        )}
-      </summary>
+        )}>
       {ch.lectures.length ? (
         <SortableList items={ch.lectures} label={(l) => `lecture ${l.title}`} disabled={!canWrite} render={lectureRow}
-          onReorder={(ids) => order(`/courses/chapters/${ch.id}/lectures/order`, ids)} />
+          onReorder={(ids) => order(`${COURSES_API}/chapters/${ch.id}/lectures/order`, ids)} />
       ) : <p className="small muted">No lectures yet.</p>}
       {canWrite && <button type="button" className="btn btn-sm" onClick={() => setEditing({ kind: "lecture-new", chapterId: ch.id })}><IconPlus /> Add lecture</button>}
-    </details>
+    </Collapsible>
   );
 
   const playlistRow = (p: Playlist) => (
-    <details className="content-node playlist" open>
-      <summary>
-        <span><strong>{p.title}</strong> <span className="small muted">· {p.chapters.length} chapter(s)</span></span>
-        {canWrite && (
+    <Collapsible className="content-node playlist" title={<><strong>{p.title}</strong> <span className="small muted">· {p.chapters.length} chapter(s)</span></>}
+      label={`playlist ${p.title}`} actions={canWrite && (
           <span className="actions-cell">
             <button type="button" className="btn btn-sm" onClick={() => setEditing({ kind: "playlist", parentId: course.id, node: p })} aria-label={`Edit playlist ${p.title}`}>Edit</button>
             <button type="button" className="btn btn-sm btn-danger" aria-label={`Delete playlist ${p.title}`}
-              onClick={() => setDeleting({ path: `/courses/playlists/${p.id}`, label: `Playlist “${p.title}”`, detail: "All its chapters and lectures are removed too." })}>Delete</button>
+              onClick={() => setDeleting({ path: `${COURSES_API}/playlists/${p.id}`, label: `Playlist “${p.title}”`, detail: "All its chapters and lectures are removed too." })}>Delete</button>
           </span>
-        )}
-      </summary>
+        )}>
       {p.description && <p className="small muted">{p.description}</p>}
       {p.chapters.length ? (
         <SortableList items={p.chapters} label={(c) => `chapter ${c.title}`} disabled={!canWrite} render={chapterRow}
-          onReorder={(ids) => order(`/courses/playlists/${p.id}/chapters/order`, ids)} />
+          onReorder={(ids) => order(`${COURSES_API}/playlists/${p.id}/chapters/order`, ids)} />
       ) : <p className="small muted">No chapters yet.</p>}
       {canWrite && <button type="button" className="btn btn-sm" onClick={() => setEditing({ kind: "chapter", parentId: p.id, node: null })}><IconPlus /> Add chapter</button>}
-    </details>
+    </Collapsible>
   );
 
   return (
     <section className="stack" aria-label="Course content">
       {course.playlists.length ? (
         <SortableList items={course.playlists} label={(p) => `playlist ${p.title}`} disabled={!canWrite} render={playlistRow}
-          onReorder={(ids) => order(`/courses/${course.id}/playlists/order`, ids)} />
+          onReorder={(ids) => order(`${COURSES_API}/${course.id}/playlists/order`, ids)} />
       ) : (
         <div className="card"><EmptyState title="No content yet">Add a playlist, then chapters and lectures inside it.</EmptyState></div>
       )}
@@ -151,7 +145,7 @@ function NodeDialog({ kind, parentId, node, onClose }: { kind: NodeKind; parentI
     e.preventDefault();
     if (save.isPending) return;
     if (!title.trim()) return setError(`Enter the ${kind} name.`);
-    const path = node ? `/courses/${kind}s/${node.id}` : kind === "playlist" ? `/courses/${parentId}/playlists` : `/courses/playlists/${parentId}/chapters`;
+    const path = node ? `${COURSES_API}/${kind}s/${node.id}` : kind === "playlist" ? `${COURSES_API}/${parentId}/playlists` : `${COURSES_API}/playlists/${parentId}/chapters`;
     try {
       await save.mutateAsync({ create: !node, path, body: { title: title.trim(), description: description.trim() || null, thumbnail_asset_id: thumb?.id ?? null } });
       toast.success(`${label} saved.`);
@@ -193,7 +187,7 @@ function NewLectureDialog({ chapterId, onClose, onCreated }: { chapterId: number
     const body: LectureBody = { title: title.trim(), description: null, thumbnail_asset_id: null, duration_seconds: null,
       is_free_preview: false, status: "draft", default_language: null };
     try {
-      const lecture = await save.mutateAsync({ create: true, path: `/courses/chapters/${chapterId}/lectures`, body });
+      const lecture = await save.mutateAsync({ create: true, path: `${COURSES_API}/chapters/${chapterId}/lectures`, body });
       onCreated(lecture.id);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not add the lecture.");
@@ -213,5 +207,21 @@ function NewLectureDialog({ chapterId, onClose, onCreated }: { chapterId: number
         </div>
       </form>
     </Dialog>
+  );
+}
+
+/** A section with its own expand/collapse button; actions sit beside it (never inside it). */
+function Collapsible({ className, title, label, actions, children }: { className: string; title: ReactNode; label: string; actions: ReactNode; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <section className={className} aria-label={label}>
+      <div className="content-head">
+        <button type="button" className="btn btn-ghost btn-sm collapse-btn" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+          aria-label={`${open ? "Collapse" : "Expand"} ${label}`}>{open ? "▾" : "▸"}</button>
+        <span className="content-title">{title}</span>
+        {actions}
+      </div>
+      {open && <div className="content-children">{children}</div>}
+    </section>
   );
 }

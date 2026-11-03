@@ -1,5 +1,8 @@
 // Course management API shapes (backend: app/schemas/course.py).
-import type { Decimal, IsoDateTime } from "../../api/types";
+import type { IsoDateTime } from "../../api/types";
+
+/** Money is integer paise (₹1 = 100), the AdhyaapakAI convention. */
+export type Paise = number;
 
 export type CourseStatus = "draft" | "published" | "archived";
 export type DisplayStatus = "draft" | "scheduled" | "published" | "archived";
@@ -38,9 +41,9 @@ export interface CourseInput {
   subject_id: number | null;
   is_free: boolean;
   currency: string;
-  price: Decimal | null;
-  original_price: Decimal | null;
-  discounted_price: Decimal | null;
+  price_paise: Paise | null;
+  original_price_paise: Paise | null;
+  discounted_price_paise: Paise | null;
   launch_at: IsoDateTime | null;
   validity_value: number;
   validity_unit: ValidityUnit;
@@ -52,7 +55,7 @@ export interface Course extends Omit<CourseInput, "thumbnail_asset_id"> {
   class_name: string | null;
   stream_name: string | null;
   subject_name: string | null;
-  effective_price: Decimal;
+  effective_price_paise: Paise;
   status: CourseStatus;
   display_status: DisplayStatus;
   validity_label: string;
@@ -154,16 +157,15 @@ export interface Enrollment {
   id: number;
   course_id: number;
   course_title: string;
-  student_id: string;
-  student_name: string | null;
+  student_id: string; // the app's opaque user id (no names are stored)
   source: "payment" | "free";
   status: EnrollmentStatus;
   payment_provider: string | null;
   payment_id: string | null;
   order_id: string | null;
   currency: string;
-  list_price: Decimal;
-  amount_paid: Decimal;
+  list_price_paise: Paise;
+  amount_paid_paise: Paise;
   voucher_code: string | null;
   purchased_at: IsoDateTime | null;
   access_start_at: IsoDateTime | null;
@@ -197,7 +199,7 @@ export interface CourseSummary {
   active_enrollments: number;
   expired_enrollments: number;
   pending_enrollments: number;
-  revenue: { currency: string; amount: Decimal }[];
+  revenue: { currency: string; amount_paise: Paise }[];
 }
 
 export interface StudentLecture {
@@ -217,9 +219,9 @@ export interface StudentCourse {
   thumbnail_url: string | null;
   is_free: boolean;
   currency: string;
-  price: Decimal | null;
-  original_price: Decimal | null;
-  effective_price: Decimal;
+  price_paise: Paise | null;
+  original_price_paise: Paise | null;
+  effective_price_paise: Paise;
   validity_label: string;
   availability: { purchasable: boolean; reason: string | null; launch_at: IsoDateTime | null };
   playlists: { id: number; title: string; description: string | null; chapters: { id: number; title: string; lectures: StudentLecture[] }[] }[];

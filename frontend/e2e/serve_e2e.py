@@ -46,6 +46,9 @@ os.environ.update(
         "EMAIL_DELIVERY_ENABLED": "false",
         "DEFAULT_DISPLAY_TIMEZONE": "Asia/Kolkata",
         "SSE_CHECK_SECONDS": "1",
+        # Never reach the real AdhyaapakAI backend with the real admin secret from backend/.env.
+        "ADHYAAPAK_API_BASE_URL": "",
+        "ADHYAAPAK_ADMIN_SECRET": "",
     }
 )
 

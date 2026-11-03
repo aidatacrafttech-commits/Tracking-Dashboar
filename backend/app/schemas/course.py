@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from decimal import Decimal
-from typing import Any, Literal
+from decimal import ROUND_HALF_UP, Decimal
+from typing import Annotated, Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 
@@ -20,27 +20,28 @@ from app.models.enums import (
     TaxonomyKind,
     ValidityUnit,
 )
-from app.schemas.common import ApiModel, DecimalStr, InputModel, UTCInput, normalize_currency
-from app.schemas.voucher import EXTERNAL_ID_RE, REFERENCE_RE, parse_amount
+from app.schemas.common import ApiModel, InputModel, UTCInput, normalize_currency
+from app.schemas.voucher import EXTERNAL_ID_RE, REFERENCE_RE
 from app.services.course_validity import MAX_VALIDITY
 
-# Language variants a lecture can have (code -> display name).
+# Language variants a lecture can have (code -> display name). The codes are the AdhyaapakAI
+# app's (services/course_layout.LANGUAGES there), so content moves across unchanged.
 LANGUAGES: dict[str, str] = {
-    "en": "English",
-    "hi": "Hindi",
-    "bho": "Bhojpuri",
-    "mr": "Marathi",
-    "ta": "Tamil",
-    "te": "Telugu",
-    "bn": "Bengali",
-    "gu": "Gujarati",
-    "kn": "Kannada",
-    "ml": "Malayalam",
-    "pa": "Punjabi",
-    "or": "Odia",
-    "ur": "Urdu",
-    "as": "Assamese",
+    "hinglish": "Hinglish",
+    "english": "English",
+    "hindi": "Hindi",
+    "marathi": "Marathi",
+    "bengali": "Bengali",
+    "odia": "Odia",
+    "gujarati": "Gujarati",
+    "tamil": "Tamil",
+    "malayalam": "Malayalam",
+    "kannada": "Kannada",
+    "telugu": "Telugu",
+    "punjabi": "Punjabi",
 }
+# Money crosses the API as integer paise (the AdhyaapakAI convention); stored as exact rupees.
+MAX_PAISE = 10**12
 DisplayStatus = Literal["draft", "scheduled", "published", "archived"]
 CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
@@ -54,8 +55,17 @@ def _clean(value: str | None) -> str | None:
     return value or None
 
 
-def _money(value: Any) -> Decimal | None:
-    return None if value is None or value == "" else parse_amount(value)
+def to_paise(amount: Decimal | None) -> int | None:
+    if amount is None:
+        return None
+    return int((amount * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
+
+def from_paise(paise: int | None) -> Decimal | None:
+    return None if paise is None else (Decimal(paise) / 100).quantize(Decimal("0.01"))
+
+
+Paise = Annotated[int, Field(ge=0, le=MAX_PAISE)]
 
 
 # --- taxonomy ------------------------------------------------------------------------------
@@ -108,9 +118,9 @@ class CourseFields(InputModel):
     subject_id: int | None = Field(default=None, ge=1)
     is_free: bool = False
     currency: str = Field(default="INR", min_length=3, max_length=3)
-    price: Decimal | None = None
-    original_price: Decimal | None = None
-    discounted_price: Decimal | None = None
+    price_paise: Paise | None = None
+    original_price_paise: Paise | None = None  # struck-out MRP
+    discounted_price_paise: Paise | None = None  # sale price
     launch_at: UTCInput | None = None
     validity_value: int = Field(ge=1, le=3650)
     validity_unit: ValidityUnit
@@ -119,11 +129,6 @@ class CourseFields(InputModel):
     @classmethod
     def _strip(cls, value: str | None) -> str | None:
         return _clean(value)
-
-    @field_validator("price", "original_price", "discounted_price", mode="before")
-    @classmethod
-    def _amounts(cls, value: Any) -> Decimal | None:
-        return _money(value)
 
     @field_validator("currency")
     @classmethod
@@ -139,18 +144,36 @@ class CourseFields(InputModel):
                 f"validity can be at most {MAX_VALIDITY[self.validity_unit]}"
                 f" {self.validity_unit.value}"
             )
+        price, original, discounted = (
+            self.price_paise,
+            self.original_price_paise,
+            self.discounted_price_paise,
+        )
         if self.is_free:
-            if any(p for p in (self.price, self.original_price, self.discounted_price)):
+            if any(p for p in (price, original, discounted)):
                 raise ValueError("a free course has no price; clear the price fields")
-            self.price = self.original_price = self.discounted_price = None
+            self.price_paise = self.original_price_paise = self.discounted_price_paise = None
             return self
-        if self.price is None or self.price <= 0:
+        if price is None or price <= 0:
             raise ValueError("a paid course needs a price above 0")
-        if self.discounted_price is not None and not 0 < self.discounted_price < self.price:
+        if discounted is not None and not 0 < discounted < price:
             raise ValueError("the discounted price must be above 0 and below the course price")
-        if self.original_price is not None and self.original_price < self.price:
+        if original is not None and original < price:
             raise ValueError("the original price (MRP) cannot be below the course price")
         return self
+
+    # Rupee amounts for the service layer (stored as exact decimals).
+    @property
+    def price(self) -> Decimal | None:
+        return from_paise(self.price_paise)
+
+    @property
+    def original_price(self) -> Decimal | None:
+        return from_paise(self.original_price_paise)
+
+    @property
+    def discounted_price(self) -> Decimal | None:
+        return from_paise(self.discounted_price_paise)
 
 
 class CourseCreate(CourseFields):
@@ -185,10 +208,10 @@ class CourseRead(ApiModel):
     subject_name: str | None
     is_free: bool
     currency: str
-    price: DecimalStr | None
-    original_price: DecimalStr | None
-    discounted_price: DecimalStr | None
-    effective_price: DecimalStr  # what a student pays before any voucher (0 if free)
+    price_paise: int | None
+    original_price_paise: int | None
+    discounted_price_paise: int | None
+    effective_price_paise: int  # what a student pays before any voucher (0 if free)
     status: CourseStatus
     display_status: DisplayStatus
     launch_at: datetime | None
@@ -374,6 +397,9 @@ class UploadRequest(InputModel):
     filename: str = Field(min_length=1, max_length=200)
     content_type: str = Field(min_length=3, max_length=100)
     size_bytes: int = Field(ge=1)
+    # The course the file belongs to (its key is {prefix}{course_id}/...); omitted for a
+    # thumbnail chosen before the course exists ({prefix}shared/...).
+    course_id: int | None = Field(default=None, ge=1)
 
 
 class UploadTicket(ApiModel):
@@ -397,16 +423,15 @@ class EnrollmentRead(ApiModel):
     id: int
     course_id: int
     course_title: str
-    student_id: str
-    student_name: str | None
+    student_id: str  # the app's opaque user id; no name or contact details are stored
     source: EnrollmentSource
     status: EnrollmentStatus
     payment_provider: str | None
     payment_id: str | None
     order_id: str | None
     currency: str
-    list_price: DecimalStr
-    amount_paid: DecimalStr
+    list_price_paise: int
+    amount_paid_paise: int
     voucher_code: str | None
     purchased_at: datetime | None
     access_start_at: datetime | None
@@ -444,7 +469,7 @@ class CancelRequest(InputModel):
 
 class MoneyTotal(ApiModel):
     currency: str
-    amount: DecimalStr
+    amount_paise: int
 
 
 class CourseSummary(ApiModel):
@@ -465,7 +490,6 @@ class CourseSummary(ApiModel):
 
 class _Student(InputModel):
     student_id: str = Field(min_length=1, max_length=128)
-    student_name: str | None = Field(default=None, max_length=120)
 
     @field_validator("student_id")
     @classmethod
@@ -473,11 +497,6 @@ class _Student(InputModel):
         if not EXTERNAL_ID_RE.match(value):
             raise ValueError("letters, digits and . _ : @ - only (max 128)")
         return value
-
-    @field_validator("student_name")
-    @classmethod
-    def _name(cls, value: str | None) -> str | None:
-        return _clean(value)
 
 
 def _reference(value: str | None) -> str | None:
@@ -506,7 +525,7 @@ class PaymentConfirm(_Student):
     payment_id: str = Field(min_length=1, max_length=128)
     order_id: str | None = Field(default=None, max_length=128)
     payment_provider: str = Field(min_length=2, max_length=40, pattern=r"^[a-z0-9_.-]+$")
-    amount_paid: Decimal
+    amount_paid_paise: Paise
     currency: str = Field(default="INR", min_length=3, max_length=3)
     paid_at: UTCInput | None = None
     voucher_code: str | None = Field(default=None, max_length=40)
@@ -515,11 +534,6 @@ class PaymentConfirm(_Student):
     @classmethod
     def _ref(cls, value: str | None) -> str | None:
         return _reference(value)
-
-    @field_validator("amount_paid", mode="before")
-    @classmethod
-    def _amount(cls, value: Any) -> Decimal:
-        return parse_amount(value)
 
     @field_validator("currency")
     @classmethod
@@ -530,6 +544,10 @@ class PaymentConfirm(_Student):
     @classmethod
     def _voucher(cls, value: str | None) -> str | None:
         return value.strip().upper() or None if value else None
+
+    @property
+    def amount_paid(self) -> Decimal:
+        return from_paise(self.amount_paid_paise) or Decimal(0)
 
 
 class FreeEnroll(_Student):
@@ -588,9 +606,9 @@ class StudentCourse(ApiModel):
     subject_name: str | None
     is_free: bool
     currency: str
-    price: DecimalStr | None
-    original_price: DecimalStr | None
-    effective_price: DecimalStr
+    price_paise: int | None
+    original_price_paise: int | None
+    effective_price_paise: int
     validity_value: int
     validity_unit: ValidityUnit
     validity_label: str

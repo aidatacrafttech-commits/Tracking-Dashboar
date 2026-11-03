@@ -19,6 +19,9 @@ const ThresholdsPage = lazy(() => import("./pages/ThresholdsPage").then((m) => (
 const AlertsPage = lazy(() => import("./pages/AlertsPage").then((m) => ({ default: m.AlertsPage })));
 const AwsPage = lazy(() => import("./pages/AwsPage").then((m) => ({ default: m.AwsPage })));
 const VouchersPage = lazy(() => import("./pages/VouchersPage").then((m) => ({ default: m.VouchersPage })));
+const AccountDeletionsPage = lazy(() => import("./pages/AccountDeletionsPage").then((m) => ({ default: m.AccountDeletionsPage })));
+const CoursesPage = lazy(() => import("./pages/CoursesPage").then((m) => ({ default: m.CoursesPage })));
+const CourseEditorPage = lazy(() => import("./pages/CourseEditorPage").then((m) => ({ default: m.CourseEditorPage })));
 
 const page = (element: React.ReactNode) => (
   <Suspense fallback={<div className="card"><LoadingBlock rows={5} label="Loading page" /></div>}>{element}</Suspense>
@@ -60,6 +63,9 @@ function ProtectedApp() {
           <Route path="alerts" element={page(<AlertsPage />)} />
           <Route path="aws" element={page(<AwsPage />)} />
           <Route path="vouchers" element={page(<VouchersPage />)} />
+          <Route path="courses" element={page(<CoursesPage />)} />
+          <Route path="account-deletions" element={page(<AccountDeletionsPage />)} />
+          <Route path="courses/:id" element={page(<CourseEditorPage />)} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

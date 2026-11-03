@@ -46,6 +46,10 @@ const PAGES = [
   { label: "AWS", heading: "AWS monitoring", ready: "tutor-worker" },
   // Without the AdhyaapakAI admin secret the page shows only the secret screen (no backend call).
   { label: "Voucher Management", heading: "Voucher Management", ready: "Unlock Voucher Management" },
+  // The e2e fixture database has no courses: the page shows its real empty state.
+  { label: "Course Management", heading: "Course Management", ready: "No courses yet" },
+  // No AdhyaapakAI backend in e2e: the page shows its real "not configured" notice.
+  { label: "Account Deletions", heading: "Account Deletions", ready: "Account deletions are not configured" },
 ];
 
 test("content security policy blocks injected inline scripts", async ({ page }) => {

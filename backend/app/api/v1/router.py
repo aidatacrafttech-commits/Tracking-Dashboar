@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    account_deletions,
     admin,
     alerts,
     auth,
@@ -27,3 +28,4 @@ api_router.include_router(vouchers.router)
 api_router.include_router(vouchers.integration_router)
 api_router.include_router(courses.router)
 api_router.include_router(courses.integration_router)
+api_router.include_router(account_deletions.router)

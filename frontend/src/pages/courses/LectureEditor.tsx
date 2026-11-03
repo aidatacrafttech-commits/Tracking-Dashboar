@@ -4,7 +4,7 @@ import { ConfirmDialog, Dialog } from "../../components/Dialog";
 import { IconPlus } from "../../components/icons";
 import { useToast } from "../../components/Toast";
 import { Badge, Notice } from "../../components/ui";
-import { previewLecture, useDeleteNode, useReorder, useSaveNode, type LectureBody, type ResourceBody, type VariantBody } from "./api";
+import { previewLecture, useDeleteNode, useReorder, useSaveNode, type LectureBody, type ResourceBody, type VariantBody, COURSES_API } from "./api";
 import { FileField } from "./FileField";
 import { LANGUAGES } from "./shared";
 import { SortableList } from "./SortableList";
@@ -57,7 +57,7 @@ export function LectureEditor({ courseId, lecture, canWrite, onClose }: { course
       status: form.status, default_language: form.default_language || null,
     };
     try {
-      await save.mutateAsync({ create: false, path: `/courses/lectures/${lecture.id}`, body });
+      await save.mutateAsync({ create: false, path: `${COURSES_API}/lectures/${lecture.id}`, body });
       toast.success("Lecture saved.");
     } catch (err) {
       setErrors(apiMessage(err, "Could not save the lecture."));
@@ -152,7 +152,7 @@ export function LectureEditor({ courseId, lecture, canWrite, onClose }: { course
                   <button type="button" className="btn btn-sm" onClick={() => watch(v.language)} aria-label={`Preview ${v.language_name} video`}>Preview</button>
                   {canWrite && <>
                     <button type="button" className="btn btn-sm" onClick={() => setVariant(v)} aria-label={`Edit ${v.language_name} version`}>Edit</button>
-                    <button type="button" className="btn btn-sm btn-danger" onClick={() => setDeleting({ path: `/courses/variants/${v.id}`, label: `${v.language_name} version` })}
+                    <button type="button" className="btn btn-sm btn-danger" onClick={() => setDeleting({ path: `${COURSES_API}/variants/${v.id}`, label: `${v.language_name} version` })}
                       aria-label={`Remove ${v.language_name} version`}>Remove</button>
                   </>}
                 </span>
@@ -175,13 +175,13 @@ export function LectureEditor({ courseId, lecture, canWrite, onClose }: { course
         <h3 id="le-resources" className="form-section">Study materials</h3>
         {lecture.resources.length === 0 ? <p className="small muted">No PDFs or notes yet.</p> : (
           <SortableList items={lecture.resources} label={(r) => `material ${r.title}`} disabled={!canWrite}
-            onReorder={(ids) => reorder.mutateAsync({ path: `/courses/lectures/${lecture.id}/resources/order`, ids }).catch((e) => toast.error(e))}
+            onReorder={(ids) => reorder.mutateAsync({ path: `${COURSES_API}/lectures/${lecture.id}/resources/order`, ids }).catch((e) => toast.error(e))}
             render={(r) => (
               <div className="content-row">
                 <div><strong>{r.title}</strong> <span className="small muted">· {r.asset.filename}{r.is_downloadable ? "" : " · view only"}</span></div>
                 {canWrite && <span className="actions-cell">
                   <button type="button" className="btn btn-sm" onClick={() => setResource(r)} aria-label={`Edit material ${r.title}`}>Edit</button>
-                  <button type="button" className="btn btn-sm btn-danger" onClick={() => setDeleting({ path: `/courses/resources/${r.id}`, label: `Material “${r.title}”` })}
+                  <button type="button" className="btn btn-sm btn-danger" onClick={() => setDeleting({ path: `${COURSES_API}/resources/${r.id}`, label: `Material “${r.title}”` })}
                     aria-label={`Remove material ${r.title}`}>Remove</button>
                 </span>}
               </div>
@@ -203,7 +203,7 @@ export function LectureEditor({ courseId, lecture, canWrite, onClose }: { course
 function VariantDialog({ lectureId, variant, taken, onClose }: { lectureId: number; variant: Variant | null; taken: string[]; onClose: () => void }) {
   const toast = useToast();
   const save = useSaveNode<Variant>();
-  const [language, setLanguage] = useState(variant?.language ?? Object.keys(LANGUAGES).find((l) => !taken.includes(l)) ?? "en");
+  const [language, setLanguage] = useState(variant?.language ?? Object.keys(LANGUAGES).find((l) => !taken.includes(l)) ?? "hinglish");
   const [source, setSource] = useState<"upload" | "url">(variant?.video_url ? "url" : "upload");
   const [video, setVideo] = useState(ref(variant?.video ?? null));
   const [url, setUrl] = useState(variant?.video_url ?? "");
@@ -227,7 +227,7 @@ function VariantDialog({ lectureId, variant, taken, onClose }: { lectureId: numb
       description: description.trim() || null,
     };
     try {
-      await save.mutateAsync({ create: !variant, path: variant ? `/courses/variants/${variant.id}` : `/courses/lectures/${lectureId}/variants`, body });
+      await save.mutateAsync({ create: !variant, path: variant ? `${COURSES_API}/variants/${variant.id}` : `${COURSES_API}/lectures/${lectureId}/variants`, body });
       toast.success(`${LANGUAGES[language]} version saved.`);
       onClose();
     } catch (err) {
@@ -255,7 +255,7 @@ function VariantDialog({ lectureId, variant, taken, onClose }: { lectureId: numb
         <fieldset className="field">
           <legend>Video source</legend>
           <label className="checkbox"><input type="radio" name="va-source" checked={source === "upload"} onChange={() => setSource("upload")} /> Upload a file</label>
-          <label className="checkbox"><input type="radio" name="va-source" checked={source === "url"} onChange={() => setSource("url")} /> Video URL</label>
+          <label className="checkbox"><input type="radio" name="va-source" checked={source === "url"} onChange={() => setSource("url")} /> Paste a video URL</label>
         </fieldset>
         <div style={{ gridColumn: "1 / -1" }}>
           {source === "upload" ? (
@@ -297,7 +297,7 @@ function ResourceDialog({ lectureId, resource, onClose }: { lectureId: number; r
     if (Object.keys(found).length || !file) return;
     const body: ResourceBody = { title: title.trim(), asset_id: file.id, is_downloadable: downloadable };
     try {
-      await save.mutateAsync({ create: !resource, path: resource ? `/courses/resources/${resource.id}` : `/courses/lectures/${lectureId}/resources`, body });
+      await save.mutateAsync({ create: !resource, path: resource ? `${COURSES_API}/resources/${resource.id}` : `${COURSES_API}/lectures/${lectureId}/resources`, body });
       toast.success("Study material saved.");
       onClose();
     } catch (err) {

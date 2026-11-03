@@ -14,6 +14,7 @@ Rules enforced here (see docs/COURSES.md):
 from __future__ import annotations
 
 import mimetypes
+import re
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -84,6 +85,7 @@ from app.schemas.course import (
     UploadTicket,
     VariantInput,
     VariantRead,
+    to_paise,
 )
 from app.services.context import RequestContext
 from app.services.course_storage import ALLOWED_TYPES, MB, CourseStorage
@@ -91,7 +93,8 @@ from app.services.course_validity import validity_label
 from app.services.vouchers import _field_error, _like
 
 T = TypeVar("T")
-SortKey = Literal["created", "updated", "title", "launch_at"]
+VERSION_CONFLICT = "VERSION_CONFLICT"  # stale `version` on update (AdhyaapakAI code)
+SortKey = Literal["created", "updated", "title", "launch_at", "price"]
 OPEN_ENROLLMENT = (EnrollmentStatus.ACTIVE, EnrollmentStatus.PENDING)
 
 
@@ -389,10 +392,10 @@ class CourseService:
             subject_name=names.get(c.subject_id) if c.subject_id else None,
             is_free=c.is_free,
             currency=c.currency,
-            price=c.price,
-            original_price=c.original_price,
-            discounted_price=c.discounted_price,
-            effective_price=effective_price(c),
+            price_paise=to_paise(c.price),
+            original_price_paise=to_paise(c.original_price),
+            discounted_price_paise=to_paise(c.discounted_price),
+            effective_price_paise=to_paise(effective_price(c)) or 0,
             status=c.status,
             display_status=display_status(c, now),
             launch_at=c.launch_at,
@@ -410,7 +413,8 @@ class CourseService:
             updated_at=c.updated_at,
             updated_by=c.updated_by,
             version=c.version,
-            can_delete=counts["enrollments"] == 0,
+            # Only drafts nobody ever enrolled in; anything else is archived instead.
+            can_delete=c.status is CourseStatus.DRAFT and counts["enrollments"] == 0,
         )
 
     def list(
@@ -455,6 +459,7 @@ class CourseService:
             "updated": C.updated_at,
             "title": C.title,
             "launch_at": C.launch_at,
+            "price": func.coalesce(C.discounted_price, C.price, 0),
         }[sort]
         total = self.session.scalar(select(func.count()).select_from(query.subquery())) or 0
         rows = list(
@@ -605,7 +610,7 @@ class CourseService:
                 if body.version != c.version:
                     raise ConflictError(
                         "This course changed since you opened it; reload and retry",
-                        code="concurrent_modification",
+                        code=VERSION_CONFLICT,
                     )
                 before = self._snapshot(c)
                 self._apply(c, body)
@@ -629,7 +634,7 @@ class CourseService:
         except StaleDataError as exc:
             raise ConflictError(
                 "This course changed at the same time; reload and retry",
-                code="concurrent_modification",
+                code=VERSION_CONFLICT,
             ) from exc
         return self.detail(course_id)
 
@@ -653,6 +658,11 @@ class CourseService:
                     "Students have enrolled in this course; archive it instead",
                     code="course_has_enrollments",
                 )
+            if c.status is not CourseStatus.DRAFT:
+                raise ConflictError(
+                    "Only a draft course can be deleted; archive it instead",
+                    code="course_not_draft",
+                )
             self._audit(ctx, "course.delete", "course", course_id, {"before": self._snapshot(c)})
             self.session.delete(c)
 
@@ -662,21 +672,27 @@ class CourseService:
         def add(code: str, message: str, blocking: bool = True) -> None:
             out.append(PublishProblem(code=code, message=message, blocking=blocking))
 
-        if not c.description:
-            add("missing_description", "Add a course description.")
-        if c.class_id is None:
-            add("missing_class", "Choose a class.")
-        if c.subject_id is None:
-            add("missing_subject", "Choose a subject.")
-        if c.launch_at is None:
-            add("missing_launch_date", "Set the launch date.")
+        # Blocking (the AdhyaapakAI contract): no title, paid without a price, or no published
+        # lecture with a playable video. Everything else is a warning.
+        if not c.title:
+            add("missing_title", "Add a course title.")
         if not c.is_free and (c.price is None or c.price <= 0):
             add("missing_price", "Set a price, or make the course free.")
+        if not c.description:
+            add("missing_description", "Add a course description.", blocking=False)
+        if c.class_id is None:
+            add("missing_class", "Choose a class.", blocking=False)
+        if c.subject_id is None:
+            add("missing_subject", "Choose a subject.", blocking=False)
+        if c.launch_at is None:
+            add(
+                "missing_launch_date",
+                "No launch date: the course goes on sale as soon as it is published.",
+                blocking=False,
+            )
         if c.thumbnail_asset_id is None:
             add("missing_thumbnail", "Add a course thumbnail (recommended).", blocking=False)
-        if not c.playlists:
-            add("no_playlists", "Add at least one playlist with lectures.")
-        published = 0
+        published = playable_lectures = 0
         for p in c.playlists:
             if not p.chapters:
                 add("empty_playlist", f"Playlist “{p.title}” has no chapters.", blocking=False)
@@ -688,10 +704,12 @@ class CourseService:
                         continue
                     published += 1
                     playable = [v for v in lec.variants if self._has_video(v)]
+                    playable_lectures += bool(playable)
                     if not playable:
                         add(
                             "lecture_without_video",
                             f"Lecture “{lec.title}” has no uploaded video in any language.",
+                            blocking=False,
                         )
                     elif lec.default_language and lec.default_language not in {
                         v.language for v in playable
@@ -699,9 +717,15 @@ class CourseService:
                         add(
                             "default_language_missing",
                             f"Lecture “{lec.title}”: the default language has no video.",
+                            blocking=False,
                         )
-        if c.playlists and published == 0:
-            add("no_published_lectures", "Publish at least one lecture.")
+        if playable_lectures == 0:
+            add(
+                "no_playable_lecture",
+                "Publish at least one lecture with an uploaded video."
+                if published
+                else "Add and publish at least one lecture with a video.",
+            )
         return out
 
     def _has_video(self, v: LectureVariant) -> bool:
@@ -1234,9 +1258,8 @@ class CourseService:
                 "size_bytes", f"The file is larger than {limit_mb} MB", "file_too_large"
             )
         now = self.clock()
-        # The key never contains the user's filename (no path tricks, no PII in the bucket).
-        folder = f"{self.settings.course_assets_prefix}{body.kind.value}/{now:%Y/%m}"
-        key = f"{folder}/{uuid.uuid4().hex}{ext}"
+        if body.course_id is not None:
+            self._get(Course, body.course_id, "Course")
         safe_name = (
             "".join(
                 ch
@@ -1248,7 +1271,7 @@ class CourseService:
         asset = CourseAsset(
             kind=body.kind,
             status=CourseAssetStatus.PENDING,
-            storage_key=key,
+            storage_key=f"{self.settings.course_assets_prefix}pending/{uuid.uuid4().hex}",
             content_type=content_type,
             size_bytes=body.size_bytes,
             original_filename=safe_name,
@@ -1257,6 +1280,12 @@ class CourseService:
         with transaction(self.session):
             self.session.add(asset)
             self.session.flush()
+            # {prefix}{course_id}/{asset_id}-{file} (the AdhyaapakAI layout). Only a slug of the
+            # filename goes into the key: no path tricks, no spaces or unicode in S3 keys.
+            folder = body.course_id if body.course_id is not None else "shared"
+            name = key_slug(safe_name, ext)
+            key = f"{self.settings.course_assets_prefix}{folder}/{asset.id}-{name}"
+            asset.storage_key = key
             self._audit(
                 ctx,
                 "course.asset.upload_requested",
@@ -1307,6 +1336,13 @@ class CourseService:
         ref = self.asset_ref(self._get(CourseAsset, asset_id, "Asset").id)
         assert ref is not None  # noqa: S101
         return ref
+
+
+def key_slug(filename: str, ext: str) -> str:
+    """'Lecture 1 – Intro.MP4' -> 'lecture-1-intro.mp4' (safe in an S3 key, max ~80 chars)."""
+    stem = filename[: -len(ext)] if ext and filename.lower().endswith(ext) else filename
+    slug = re.sub(r"[^a-z0-9]+", "-", stem.lower()).strip("-")[:70] or "file"
+    return f"{slug}{ext}"
 
 
 def guess_content_type(filename: str) -> str:

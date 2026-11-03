@@ -78,6 +78,7 @@ from app.schemas.course import (
     StudentCourseDetail,
     StudentLecture,
     StudentPlaylist,
+    to_paise,
 )
 from app.services.course_storage import CourseStorage
 from app.services.course_validity import access_expiry, validity_label
@@ -97,7 +98,7 @@ def availability(course: Course, now: datetime) -> Availability:
         return Availability(purchasable=False, reason="draft", launch_at=course.launch_at)
     if course.status is CourseStatus.ARCHIVED:
         return Availability(purchasable=False, reason="archived", launch_at=course.launch_at)
-    if course.launch_at is None or course.launch_at > now:
+    if course.launch_at is not None and course.launch_at > now:  # no date = on sale at publish
         return Availability(purchasable=False, reason="not_launched", launch_at=course.launch_at)
     return Availability(purchasable=True, reason=None, launch_at=course.launch_at)
 
@@ -172,15 +173,14 @@ class CourseEnrollmentService:
             course_id=e.course_id,
             course_title=e.course_title,
             student_id=e.student_id,
-            student_name=e.student_name,
             source=e.source,
             status=self.effective_status(e, now),
             payment_provider=e.payment_provider,
             payment_id=e.payment_id,
             order_id=e.order_id,
             currency=e.currency,
-            list_price=e.list_price,
-            amount_paid=e.amount_paid,
+            list_price_paise=to_paise(e.list_price) or 0,
+            amount_paid_paise=to_paise(e.amount_paid) or 0,
             voucher_code=e.voucher_code,
             purchased_at=e.purchased_at,
             access_start_at=e.access_start_at,
@@ -269,7 +269,6 @@ class CourseEnrollmentService:
             query = query.where(
                 or_(
                     func.lower(E.student_id).like(pattern, escape="\\"),
-                    func.lower(func.coalesce(E.student_name, "")).like(pattern, escape="\\"),
                     func.lower(func.coalesce(E.payment_id, "")).like(pattern, escape="\\"),
                     func.lower(func.coalesce(E.order_id, "")).like(pattern, escape="\\"),
                     func.lower(E.course_title).like(pattern, escape="\\"),
@@ -356,7 +355,7 @@ class CourseEnrollmentService:
             active_enrollments=by_status.get(EnrollmentStatus.ACTIVE, 0),
             expired_enrollments=by_status.get(EnrollmentStatus.EXPIRED, 0),
             pending_enrollments=by_status.get(EnrollmentStatus.PENDING, 0),
-            revenue=[MoneyTotal(currency=c, amount=a or Decimal(0)) for c, a in revenue],
+            revenue=[MoneyTotal(currency=c, amount_paise=to_paise(a) or 0) for c, a in revenue],
         )
 
     # --- purchases (trusted app backend) ---------------------------------------------------
@@ -364,7 +363,6 @@ class CourseEnrollmentService:
         self,
         course: Course,
         student_id: str,
-        student_name: str | None,
         source: EnrollmentSource,
         status: EnrollmentStatus,
     ) -> CourseEnrollment:
@@ -372,7 +370,6 @@ class CourseEnrollmentService:
             course_id=course.id,
             course_title=course.title,
             student_id=student_id,
-            student_name=student_name,
             source=source,
             status=status,
             currency=course.currency,
@@ -426,7 +423,6 @@ class CourseEnrollmentService:
         e = self._new_enrollment(
             course,
             body.student_id,
-            body.student_name,
             EnrollmentSource.PAYMENT,
             EnrollmentStatus.PENDING,
         )
@@ -506,7 +502,6 @@ class CourseEnrollmentService:
         e = pending or self._new_enrollment(
             course,
             body.student_id,
-            body.student_name,
             EnrollmentSource.PAYMENT,
             EnrollmentStatus.PENDING,
         )
@@ -516,19 +511,19 @@ class CourseEnrollmentService:
             )
         if body.amount_paid > e.list_price:
             raise _field_error(
-                "amount_paid", f"More than the course price ({e.list_price})", "amount_mismatch"
+                "amount_paid_paise",
+                f"More than the course price ({e.list_price})",
+                "amount_mismatch",
             )
         if body.amount_paid < e.list_price and not body.voucher_code:
             raise _field_error(
-                "amount_paid",
+                "amount_paid_paise",
                 "Less than the course price without a voucher code",
                 "amount_mismatch",
             )
         e.payment_id, e.payment_provider = body.payment_id, body.payment_provider
         e.order_id = e.order_id or body.order_id
         e.amount_paid, e.voucher_code = body.amount_paid, body.voucher_code
-        if body.student_name:
-            e.student_name = body.student_name
         self._activate(e, paid_at)
         try:
             with transaction(self.session):
@@ -582,7 +577,6 @@ class CourseEnrollmentService:
         e = self._new_enrollment(
             course,
             body.student_id,
-            body.student_name,
             EnrollmentSource.FREE,
             EnrollmentStatus.PENDING,
         )
@@ -708,9 +702,9 @@ class CourseEnrollmentService:
             subject_name=names.get(c.subject_id),  # type: ignore[arg-type]
             is_free=c.is_free,
             currency=c.currency,
-            price=c.price,
-            original_price=c.original_price,
-            effective_price=effective_price(c),
+            price_paise=to_paise(c.price),
+            original_price_paise=to_paise(c.original_price),
+            effective_price_paise=to_paise(effective_price(c)) or 0,
             validity_value=c.validity_value,
             validity_unit=c.validity_unit,
             validity_label=validity_label(c.validity_value, c.validity_unit),
@@ -719,11 +713,14 @@ class CourseEnrollmentService:
         )
 
     def catalog(self, student_id: str | None = None) -> StudentCatalog:
-        """Published courses (including ones launching later, marked not yet purchasable)."""
+        """Published and launched courses (a course with no launch date is on sale at once)."""
         now = self.clock()
         courses = self.session.scalars(
             select(Course)
-            .where(Course.status == CourseStatus.PUBLISHED)
+            .where(
+                Course.status == CourseStatus.PUBLISHED,
+                or_(Course.launch_at.is_(None), Course.launch_at <= now),
+            )
             .order_by(Course.launch_at.asc(), Course.id.asc())
         )
         return StudentCatalog(items=[self._student_course(c, student_id, now) for c in courses])

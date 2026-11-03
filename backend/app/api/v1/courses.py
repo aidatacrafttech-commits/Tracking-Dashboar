@@ -76,7 +76,7 @@ router = APIRouter(prefix="/courses", tags=["courses"])
 integration_router = APIRouter(prefix="/integrations/courses", tags=["course integration"])
 
 Id = Annotated[int, Path(ge=1)]
-Limit = Annotated[int, Query(ge=1, le=200)]
+Limit = Annotated[int, Query(ge=1, le=500)]
 Offset = Annotated[int, Query(ge=0, le=1_000_000)]
 Search = Annotated[str | None, Query(max_length=100)]
 StudentId = Annotated[
@@ -85,7 +85,7 @@ StudentId = Annotated[
 OptionalStudentId = Annotated[
     str | None, Query(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:@-]*$")
 ]
-Language = Annotated[str | None, Query(max_length=16, pattern=r"^[a-z]{2,3}$")]
+Language = Annotated[str | None, Query(max_length=16, pattern=r"^[a-z]{2,16}$")]
 _bearer = HTTPBearer(auto_error=False)
 NO_CONTENT = Response(status_code=status.HTTP_204_NO_CONTENT)
 

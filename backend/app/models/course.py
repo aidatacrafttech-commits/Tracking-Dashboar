@@ -289,8 +289,8 @@ class CourseEnrollment(TimestampMixin, Base):
         sa.ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False
     )
     course_title: Mapped[str] = mapped_column(sa.String(160), nullable=False)  # at purchase
-    student_id: Mapped[str] = mapped_column(sa.String(128), nullable=False)  # app's user id
-    student_name: Mapped[str | None] = mapped_column(sa.String(120))
+    # The app's opaque user id only: no name or contact details (they stay with the app).
+    student_id: Mapped[str] = mapped_column(sa.String(128), nullable=False)
     source: Mapped[EnrollmentSource] = mapped_column(
         str_enum(EnrollmentSource, "enrollment_source"), nullable=False
     )
