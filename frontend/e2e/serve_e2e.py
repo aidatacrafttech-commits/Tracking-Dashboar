@@ -47,8 +47,6 @@ os.environ.update(
         "DEFAULT_DISPLAY_TIMEZONE": "Asia/Kolkata",
         "SSE_CHECK_SECONDS": "1",
         # Never reach the real AdhyaapakAI backend with the real admin secret from backend/.env.
-        "ADHYAAPAK_API_BASE_URL": "",
-        "ADHYAAPAK_ADMIN_SECRET": "",
         # ...and never read the real app database (ADHYAAPAK_MONGO_URL in backend/.env).
         "ADHYAAPAK_MONGO_URL": "",
         "ADHYAAPAK_MONGO_DB": "",

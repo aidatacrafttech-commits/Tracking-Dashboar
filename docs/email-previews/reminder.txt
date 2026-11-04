@@ -21,4 +21,4 @@ Recommended action: Top up the Deepgram project balance in the Deepgram console.
 Provider console: https://console.deepgram.com
 Dashboard: https://monitor.example.com
 
--- API Cost Monitor. Automated message; do not reply.
+-- Adhyaapak AI Dashboard. Automated message; do not reply.

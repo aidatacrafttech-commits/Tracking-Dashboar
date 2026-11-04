@@ -332,7 +332,7 @@ function PeopleList({ range, today, onRange, enabled }: { range: DateRange; toda
         <p className="small muted">
           {shown} shown{active.data?.more ? " · only the latest are listed" : ""}.{" "}
           {kind === "signups" ? "Accounts deleted since are not listed."
-            : "A permanently deleted account keeps no name, email or phone: the app removes them. Restore or purge from Account Deletions."}
+            : "A permanently deleted account keeps no name, email or phone: the app removes them."}
         </p>
       )}
     </Card>

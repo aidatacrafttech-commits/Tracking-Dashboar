@@ -64,7 +64,7 @@ class DatabaseSettings(BaseSettings):
 class Settings(BaseSettings):
     model_config = _ENV_CONFIG
 
-    app_name: str = "API Cost Monitor"
+    app_name: str = "Adhyaapak AI Dashboard"
     app_version: str = "0.1.0"
     app_env: Literal["development", "test", "production"] = "development"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
@@ -193,13 +193,6 @@ class Settings(BaseSettings):
     voucher_api_token: SecretStr | None = None
     # Starting user limit; the owner can change it at runtime (stored in the database).
     voucher_default_user_limit: int = Field(default=1000, ge=1, le=10_000_000)
-
-    # --- AdhyaapakAI admin API (Account Deletions screen) ------------------------------
-    # The dashboard SERVER calls the AdhyaapakAI backend with this secret (x-admin-secret);
-    # the browser only ever calls this dashboard, so the secret never reaches a bundle.
-    # e.g. https://api.adhyaapak.ai (live) or http://127.0.0.1:8001 (local). Unset = off.
-    adhyaapak_api_base_url: str | None = Field(default=None, pattern=r"^https?://[^\s/?#]+$")
-    adhyaapak_admin_secret: SecretStr | None = None
 
     # --- AdhyaapakAI MongoDB (App Users screen) -----------------------------------------
     # Read-only analytics over the app's users: the dashboard SERVER connects; the URL never
@@ -372,8 +365,6 @@ class Settings(BaseSettings):
         "voucher_api_token",
         "course_api_token",
         "course_assets_bucket",
-        "adhyaapak_api_base_url",
-        "adhyaapak_admin_secret",
         "adhyaapak_mongo_url",
         "adhyaapak_mongo_db",
         "adhyaapak_jwt_secret",
@@ -467,7 +458,6 @@ class Settings(BaseSettings):
             self.course_api_token,
             self.course_assets_access_key_id,
             self.course_assets_secret_access_key,
-            self.adhyaapak_admin_secret,
             self.adhyaapak_mongo_url,
             self.adhyaapak_jwt_secret,
         ]

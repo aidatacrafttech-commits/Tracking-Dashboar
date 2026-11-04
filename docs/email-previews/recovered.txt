@@ -21,4 +21,4 @@ Recommended action: No action needed. Keep monitoring.
 Provider console: https://console.deepgram.com
 Dashboard: https://monitor.example.com
 
--- API Cost Monitor. Automated message; do not reply.
+-- Adhyaapak AI Dashboard. Automated message; do not reply.

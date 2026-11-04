@@ -42,16 +42,13 @@ export const IconMenu = (p: IconProps) => base(p, <path d="M3 6h18M3 12h18M3 18h
 export const IconClose = (p: IconProps) => base(p, <path d="M18 6 6 18M6 6l12 12" />);
 export const IconBook = (p: IconProps) => base(p, <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>);
 export const IconUsers = (p: IconProps) => base(p, <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>);
-export const IconUserX = (p: IconProps) => base(p, <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="m17 8 5 5M22 8l-5 5" /></>);
 export const IconCopy = (p: IconProps) => base(p, <><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></>);
 export const IconClock = (p: IconProps) => base(p, <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>);
 export const IconSort = (p: IconProps & { direction?: "ascending" | "descending" | "none" }) => {
   const { direction = "none", ...rest } = p;
   return base(rest, direction === "ascending" ? <path d="m6 15 6-6 6 6" /> : direction === "descending" ? <path d="m6 9 6 6 6-6" /> : <path d="m7 9 5-5 5 5M7 15l5 5 5-5" />);
 };
-export const IconLogo = (p: IconProps) => (
-  <svg width={p.size ?? 26} height={p.size ?? 26} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-    <rect width="32" height="32" rx="7" fill="#2563eb" />
-    <path d="M8 21l5-6 4 4 7-9" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+// The AdhyaapakAI app icon (public/app-icon.png, a 192px copy of AppIcon.png). Decorative: the name sits beside it.
+export const IconLogo = ({ size = 26 }: { size?: number }) => (
+  <img className="app-logo" src={`${import.meta.env.BASE_URL}app-icon.png`} width={size} height={size} alt="" />
 );

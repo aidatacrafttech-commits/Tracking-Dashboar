@@ -264,7 +264,7 @@ def test_test_email_endpoint(api, sink, owner_headers, viewer_headers) -> None: 
         "me@example.com"
     ]
     [mail] = sink.messages
-    assert mail.message["Subject"] == "[Test] API Cost Monitor email delivery check"
+    assert mail.message["Subject"] == "[Test] Adhyaapak AI Dashboard email delivery check"
     bad = api.post(
         "/api/v1/notifications/test-email", json={"to": "not-an-email"}, headers=owner_headers
     )

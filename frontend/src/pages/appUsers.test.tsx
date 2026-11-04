@@ -62,7 +62,8 @@ describe("app users", () => {
   it("shows today's numbers, the masked signups list and the daily chart table", async () => {
     useApi();
     renderApp("/app-users");
-    const signups = await screen.findByRole("region", { name: "New signups today" });
+    // First test in the file: the lazily loaded page can take over a second under a full run.
+    const signups = await screen.findByRole("region", { name: "New signups today" }, { timeout: 5000 });
     expect(signups).toHaveTextContent("12");
     expect(signups).toHaveTextContent("Yesterday 9 · 3 more today");
     const online = screen.getByRole("region", { name: "Online now" });

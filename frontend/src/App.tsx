@@ -19,7 +19,6 @@ const ThresholdsPage = lazy(() => import("./pages/ThresholdsPage").then((m) => (
 const AlertsPage = lazy(() => import("./pages/AlertsPage").then((m) => ({ default: m.AlertsPage })));
 const AwsPage = lazy(() => import("./pages/AwsPage").then((m) => ({ default: m.AwsPage })));
 const VouchersPage = lazy(() => import("./pages/VouchersPage").then((m) => ({ default: m.VouchersPage })));
-const AccountDeletionsPage = lazy(() => import("./pages/AccountDeletionsPage").then((m) => ({ default: m.AccountDeletionsPage })));
 const AppUsersPage = lazy(() => import("./pages/AppUsersPage").then((m) => ({ default: m.AppUsersPage })));
 const CoursesPage = lazy(() => import("./pages/CoursesPage").then((m) => ({ default: m.CoursesPage })));
 const CourseEditorPage = lazy(() => import("./pages/CourseEditorPage").then((m) => ({ default: m.CourseEditorPage })));
@@ -66,7 +65,6 @@ function ProtectedApp() {
           <Route path="vouchers" element={page(<VouchersPage />)} />
           <Route path="courses" element={page(<CoursesPage />)} />
           <Route path="app-users" element={page(<AppUsersPage />)} />
-          <Route path="account-deletions" element={page(<AccountDeletionsPage />)} />
           <Route path="courses/:id" element={page(<CourseEditorPage />)} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

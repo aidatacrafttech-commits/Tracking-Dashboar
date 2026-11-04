@@ -51,7 +51,6 @@ const PAGES = [
   // No app database in e2e: the page shows its real "not configured" notice.
   { label: "App Users", heading: "App Users", ready: "App users are not configured" },
   // No AdhyaapakAI backend in e2e: the page shows its real "not configured" notice.
-  { label: "Account Deletions", heading: "Account Deletions", ready: "Account deletions are not configured" },
 ];
 
 test("content security policy blocks injected inline scripts", async ({ page }) => {

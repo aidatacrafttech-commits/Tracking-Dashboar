@@ -155,7 +155,8 @@ Money is in integer paise.
     name, phone, email, status (Scheduled, Deleting, Deleted, Restored), due / deleted /
     restored time, and signup date. A permanently deleted account shows "Details removed":
     the app deletes the profile, and this page does not try to rebuild it from other data.
-    Restore and purge stay on the Account Deletions screen (AdhyaapakAI admin API).
+    Read only: this dashboard does not restore or purge accounts (that stays with the
+    AdhyaapakAI backend's own admin API).
 - **Signups list for any dates:** From date / To date pickers (default today, with a "Today"
   button) and a search box over name, email and phone.
   - Columns: time (IST), name, phone, email, class, stream, goals, and "Has course" or

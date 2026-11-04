@@ -20,4 +20,4 @@ Recommended action: Upgrade the plan or enable usage-based billing in your Eleve
 Provider console: https://elevenlabs.io
 Dashboard: https://monitor.example.com
 
--- API Cost Monitor. Automated message; do not reply.
+-- Adhyaapak AI Dashboard. Automated message; do not reply.

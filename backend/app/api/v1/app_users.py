@@ -23,7 +23,13 @@ from app.api.v1.vouchers import display_timezone
 from app.core.config import Settings
 from app.core.security import Principal
 from app.core.time import utcnow
-from app.schemas.app_users import AppUsersStatus, AppUsersSummary, DeletionList, LiveNow, SignupList
+from app.schemas.app_users import (
+    AppUsersStatus,
+    AppUsersSummary,
+    DeletionList,
+    LiveNow,
+    SignupList,
+)
 from app.services.app_users import AppUsersService, TtlCache, local_day, resolve_range
 
 router = APIRouter(prefix="/app-users", tags=["app users"])

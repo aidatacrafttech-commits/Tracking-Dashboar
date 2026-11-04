@@ -9,7 +9,7 @@ import { CSRF, mockSession, requests, server } from "../test/server";
 describe("authentication", () => {
   it("shows only the sign-in page without a session, and never calls private APIs", async () => {
     renderApp("/payments", null);
-    expect(await screen.findByRole("heading", { name: "API Cost Monitor" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Adhyaapak AI Dashboard" })).toBeInTheDocument();
     expect(screen.getByLabelText("Dashboard token")).toHaveAttribute("type", "password");
     expect(requests.filter((r) => r.url.pathname !== "/api/v1/auth/session")).toHaveLength(0);
   });

@@ -20,4 +20,4 @@ Recommended action: Add credit in the OpenAI platform billing settings, then rec
 Provider console: https://platform.openai.com
 Dashboard: https://monitor.example.com
 
--- API Cost Monitor. Automated message; do not reply.
+-- Adhyaapak AI Dashboard. Automated message; do not reply.

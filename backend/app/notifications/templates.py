@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 
 from app.core.logging import redact_text
 
-BRAND = "API Cost Monitor"
+BRAND = "Adhyaapak AI Dashboard"
 
 SOURCE_LABELS = {
     "api_verified": "Verified by the provider API",

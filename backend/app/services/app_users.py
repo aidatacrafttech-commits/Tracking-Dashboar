@@ -40,7 +40,6 @@ from pymongo.errors import (
 
 from app.core.config import Settings
 from app.core.errors import AppError, DomainValidationError, ServiceUnavailableError
-from app.services.account_deletions import mask_email
 
 logger = logging.getLogger(__name__)
 
@@ -173,6 +172,12 @@ def resolve_range(
     if (end - start).days + 1 > MAX_RANGE_DAYS:
         raise DomainValidationError(f"Choose at most {MAX_RANGE_DAYS} days.", code="range_too_long")
     return start, end
+
+
+def mask_email(email: str) -> str:
+    """Enough to recognise, not the full address."""
+    local, _, domain = email.partition("@")
+    return f"{local[:1]}***@{domain}" if domain else "***"
 
 
 def mask_phone(phone: str | None) -> str | None:

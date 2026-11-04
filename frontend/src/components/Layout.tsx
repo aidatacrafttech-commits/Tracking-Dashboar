@@ -3,7 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAppSettings, useOpsStatus } from "../api/hooks";
 import { useAuth } from "../auth/AuthContext";
 import { useLiveState } from "../live/LiveUpdates";
-import { IconAlerts, IconBook, IconUserX, IconCloud, IconLogo, IconMenu, IconOverview, IconPayments, IconProviders, IconThresholds, IconTicket, IconUsers } from "./icons";
+import { IconAlerts, IconBook, IconCloud, IconLogo, IconMenu, IconOverview, IconPayments, IconProviders, IconThresholds, IconTicket, IconUsers } from "./icons";
 
 const NAV = [
   { to: "/", label: "Overview", icon: IconOverview, end: true },
@@ -15,7 +15,6 @@ const NAV = [
   { to: "/vouchers", label: "Voucher Management", icon: IconTicket },
   { to: "/courses", label: "Course Management", icon: IconBook },
   { to: "/app-users", label: "App Users", icon: IconUsers },
-  { to: "/account-deletions", label: "Account Deletions", icon: IconUserX },
 ];
 
 const LIVE_LABELS = {
@@ -54,7 +53,7 @@ export function Layout() {
       <aside className="sidebar" data-open={open} aria-label="Main navigation" id="sidebar">
         <div className="brand">
           <IconLogo />
-          <span>API Cost Monitor</span>
+          <span>Adhyaapak AI Dashboard</span>
         </div>
         <nav className="nav">
           {NAV.map(({ to, label, icon: Icon, end }) => (
@@ -91,7 +90,7 @@ export function Layout() {
             <IconMenu size={20} />
           </button>
           <IconLogo size={22} />
-          <strong>API Cost Monitor</strong>
+          <strong>Adhyaapak AI Dashboard</strong>
           <span className="live-dot" data-state={live} title={LIVE_LABELS[live]} style={{ marginLeft: "auto" }} />
         </header>
         <main id="main" className="content" tabIndex={-1}>

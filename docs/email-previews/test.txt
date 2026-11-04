@@ -1,4 +1,4 @@
-Subject: [Test] API Cost Monitor email delivery check
+Subject: [Test] Adhyaapak AI Dashboard email delivery check
 
 This is a test message. No balance has crossed a threshold.
 
@@ -6,4 +6,4 @@ This is a test message. No balance has crossed a threshold.
 Recommended action: If you received this, SMTP delivery is configured correctly.
 Dashboard: https://monitor.example.com
 
--- API Cost Monitor. Automated message; do not reply.
+-- Adhyaapak AI Dashboard. Automated message; do not reply.

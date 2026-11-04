@@ -53,7 +53,7 @@ def message_id_for(event: AlertEvent) -> str:
 
 def build_message(event: AlertEvent, sender: str) -> EmailMessage:
     message = EmailMessage()
-    message["Subject"] = event.subject or "API Cost Monitor alert"
+    message["Subject"] = event.subject or "Adhyaapak AI Dashboard alert"
     message["From"] = sender
     message["To"] = ", ".join(event.recipients or [])
     message["Date"] = format_datetime(event.occurred_at)

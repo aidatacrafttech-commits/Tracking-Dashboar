@@ -40,7 +40,7 @@ export function LoginPage() {
       <form className="card" onSubmit={submit} noValidate aria-labelledby="login-title">
         <div className="row">
           <IconLogo size={30} />
-          <h1 id="login-title">API Cost Monitor</h1>
+          <h1 id="login-title">Adhyaapak AI Dashboard</h1>
         </div>
         {notice && <p className="notice tone-info" role="status">{notice}</p>}
         <p className="muted">
